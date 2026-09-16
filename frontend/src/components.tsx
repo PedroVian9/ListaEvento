@@ -20,7 +20,7 @@ export function TileBand({ small = false }: { small?: boolean }) {
 
 export function ProductImage({ url, name, compact = false }: { url: string; name: string; compact?: boolean }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
-  return <Box sx={{ aspectRatio: compact ? '1' : '4 / 3', bgcolor: '#F3F6FA', overflow: 'hidden', display: 'grid', placeItems: 'center', width: '100%' }}>
+  return <Box sx={{ height: compact ? { xs: 112, sm: 128 } : { xs: 132, sm: 156, md: 172 }, bgcolor: '#F3F6FA', overflow: 'hidden', display: 'grid', placeItems: 'center', width: '100%' }}>
     {url && failedUrl !== url ? <Box component="img" src={url} alt={name} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailedUrl(url)} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} /> :
       <Stack alignItems="center" gap={1} sx={{ color: '#8196B4', p: 2 }}><CardGiftcardOutlined sx={{ fontSize: compact ? 28 : 44 }} />{!compact && <Typography variant="caption">Imagem indisponível</Typography>}</Stack>}
   </Box>

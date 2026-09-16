@@ -147,6 +147,17 @@ def test_event_settings_and_sharing(admin):
     assert admin.get("/api/no-such-route").status_code == 404
 
 
+def test_attendance_deadline_blocks_new_and_changed_answers(admin):
+    person = guest(admin)
+    path = f'/api/convites/{person["token"]}/presenca'
+    settings = admin.get("/api/admin/configuracoes").json()
+    settings["data_limite_confirmacao"] = "2000-01-01"
+    assert admin.put("/api/admin/configuracoes", json=settings).status_code == 200
+    response = admin.put(path, json={"status": "CONFIRMADO"})
+    assert response.status_code == 403
+    assert "encerrou em 01/01/2000" in response.json()["detail"]
+
+
 def family(client, name="Madrinha e família"):
     names = ["Cláudia", "Carlos", "Ana", "João", "Lúcia", "Luís", "Beatriz"]
     response = client.post("/api/admin/convidados", json={"nome": name, "membros": [{"nome": n} for n in names]})

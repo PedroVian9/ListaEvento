@@ -1,6 +1,6 @@
 export type Status = 'PENDENTE' | 'CONFIRMADO' | 'NAO_VAI'
 export interface EventInfo {
-  nome_evento: string; nome_casal: string; data: string | null; hora: string | null;
+  nome_evento: string; nome_casal: string; data: string | null; data_limite_confirmacao: string | null; hora: string | null;
   endereco: string; maps_url: string; texto_apresentacao: string; texto_presentes: string;
   acompanhantes_habilitados: boolean;
 }

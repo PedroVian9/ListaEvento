@@ -75,6 +75,7 @@ class EventInput(Input):
     nome_evento: str = Field(default="Chá de Panela", min_length=1, max_length=150)
     nome_casal: str = Field(default="Maria & Pedro", min_length=1, max_length=150)
     data: date | None = None
+    data_limite_confirmacao: date | None = None
     hora: time | None = None
     endereco: str = Field(default="", max_length=500)
     maps_url: str = Field(default="", max_length=2048)

@@ -34,7 +34,7 @@ Neste workspace, foi instalado Python por meio de uma cópia local do uv em `.to
 
 ## Primeiro uso
 
-1. Entre em `/admin` e abra **Configurações**. Informe nome do casal, evento, data, horário, endereço e link do Maps. Os dados de data/local começam em branco.
+1. Entre em `/admin` e abra **Configurações**. Informe nome do casal, evento, data, horário, endereço, link do Maps e, se desejar, a data limite de confirmação. O prazo é inclusivo até 23h59; depois dele as respostas ficam apenas para consulta.
 2. Habilite acompanhantes se necessário. Desabilitar a opção zera as quantidades anteriores, conforme informado na tela.
 3. Cadastre o nome do convite, por exemplo **Madrinha e família**. Esse único campo forma a saudação **Olá, Madrinha e família!** e o link **/convite/madrinha-e-familia**. Para uma família, clique em **Adicionar família** e preencha todas as pessoas em **Pessoa 1**, **Pessoa 2**, etc., inclusive a titular. Copie e compartilhe um único link.
 4. Cadastre presentes, quantidade desejada e URLs externas de imagem e produto. Nenhuma imagem de produto é armazenada no projeto.
