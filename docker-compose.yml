@@ -1,8 +1,6 @@
 services:
   casanova:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/pedrovian9/listaevento:latest
     env_file:
       - ./backend/.env
     volumes:

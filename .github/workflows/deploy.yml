@@ -7,9 +7,16 @@ on:
 
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 concurrency:
   group: deploy-production
   cancel-in-progress: false
+
+env:
+  IMAGE_NAME: ghcr.io/pedrovian9/listaevento
 
 jobs:
   deploy:
@@ -17,6 +24,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build e push da imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Configurar SSH
         shell: bash
         env:
@@ -30,7 +61,7 @@ jobs:
 
           ssh-keyscan -H "$OCI_HOST" >> ~/.ssh/known_hosts
 
-      - name: Deploy
+      - name: Deploy na Oracle
         shell: bash
         env:
           OCI_HOST: ${{ secrets.OCI_HOST }}
@@ -39,24 +70,35 @@ jobs:
           ssh \
             -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
-            "$OCI_USER@$OCI_HOST" << 'EOF'
+            "$OCI_USER@$OCI_HOST" << EOF
 
             set -e
 
-            echo "==> Entrando no projeto"
+            echo "==> Atualizando repositório"
             cd /home/ubuntu/ListaEvento
 
-            echo "==> Atualizando código"
             git fetch origin main
             git reset --hard origin/main
 
-            echo "==> Build e deploy"
-            docker compose up -d --build casanova
+            echo "==> Autenticando no GHCR"
+            echo "${{ github.token }}" | docker login ghcr.io \
+              -u "${{ github.actor }}" \
+              --password-stdin
+
+            echo "==> Baixando imagem"
+            docker compose pull casanova
+
+            echo "==> Atualizando container"
+            docker compose up -d casanova
+
+            echo "==> Limpando imagens antigas"
+            docker image prune -f
 
             echo "==> Verificando aplicação"
             sleep 5
 
-            curl --fail \
+            curl \
+              --fail \
               --silent \
               --show-error \
               https://casanova.pedrovian9.site/api/health
