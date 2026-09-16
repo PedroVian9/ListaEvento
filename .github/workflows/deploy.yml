@@ -88,21 +88,46 @@ jobs:
             echo "==> Baixando imagem"
             docker compose pull casanova
 
-            echo "==> Atualizando container"
-            docker compose up -d casanova
+                       echo "==> Atualizando container"
+            docker compose up -d --force-recreate casanova
+
+            echo "==> Estado do container"
+            docker compose ps
+
+            echo "==> Aguardando aplicação ficar disponível"
+
+            for attempt in $(seq 1 24); do
+              echo "Tentativa ${attempt}/24"
+
+              if curl \
+                --fail \
+                --silent \
+                --show-error \
+                --connect-timeout 5 \
+                --max-time 10 \
+                https://casanova.pedrovian9.site/api/health; then
+
+                echo ""
+                echo "==> Aplicação saudável"
+                break
+              fi
+
+              if [ "$attempt" -eq 24 ]; then
+                echo "==> Aplicação não ficou disponível"
+
+                echo "==> Estado dos containers"
+                docker compose ps
+
+                echo "==> Logs do Casa Nova"
+                docker compose logs --no-color --tail=200 casanova
+
+                exit 1
+              fi
+
+              sleep 5
+            done
 
             echo "==> Limpando imagens antigas"
             docker image prune -f
 
-            echo "==> Verificando aplicação"
-            sleep 5
-
-            curl \
-              --fail \
-              --silent \
-              --show-error \
-              https://casanova.pedrovian9.site/api/health
-
-            echo ""
             echo "==> Deploy concluído"
-          EOF
