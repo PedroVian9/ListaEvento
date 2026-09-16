@@ -128,14 +128,41 @@ if (DIST / "assets").is_dir():
 def frontend(path: str):
     if path.startswith("api/") or path.startswith("assets/"):
         raise HTTPException(404, "Endereço não encontrado.")
+
     if not (DIST / "index.html").is_file():
-        raise HTTPException(404, "Front-end não compilado. Use o Vite durante o desenvolvimento.")
-    if path in {"robots.txt", "favicon.svg"}:
-        return FileResponse(DIST / path)
+        raise HTTPException(
+            404,
+            "Front-end não compilado. Use o Vite durante o desenvolvimento."
+        )
+
+    file_path = (DIST / path).resolve()
+    dist_path = DIST.resolve()
+
+    if file_path.is_file() and dist_path in file_path.parents:
+        return FileResponse(file_path)
+
     with SessionLocal() as db:
         event = get_event(db)
-    title = html.escape(f'{event["nome_evento"]} | {event["nome_casal"]}', quote=True)
+
+    title = html.escape(
+        f'{event["nome_evento"]} | {event["nome_casal"]}',
+        quote=True
+    )
+
     content = (DIST / "index.html").read_text(encoding="utf-8")
-    content = content.replace("Nosso Chá | Um novo começo", title)
-    content = content.replace("__OG_IMAGE__", html.escape(settings.frontend_origin.rstrip("/") + "/api/og-image.png", quote=True))
-    return HTMLResponse(content, headers={"Cache-Control": "no-store"})
+    content = content.replace(
+        "Nosso Chá | Um novo começo",
+        title
+    )
+    content = content.replace(
+        "__OG_IMAGE__",
+        html.escape(
+            settings.frontend_origin.rstrip("/") + "/api/og-image.png",
+            quote=True
+        )
+    )
+
+    return HTMLResponse(
+        content,
+        headers={"Cache-Control": "no-store"}
+    )
