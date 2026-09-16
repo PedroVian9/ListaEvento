@@ -18,7 +18,7 @@ test('administração, convite, presença, presentes e regeneração de link', a
   await expect(page.getByRole('heading', { name: 'Visão geral' })).toBeVisible()
 
   await page.goto('/admin/configuracoes')
-  await page.getByLabel('Nome do casal').fill('Pedro & Maria')
+  await page.getByLabel('Nome do casal').fill('Maria & Pedro')
   await page.getByLabel('Data', { exact: true }).fill('2026-10-18')
   await page.getByLabel('Hora', { exact: true }).fill('16:00')
   await page.getByLabel('Endereço', { exact: true }).fill('Jardim do Encontro, 123')
@@ -139,7 +139,7 @@ test('um convite familiar usa o nome no link e na saudação e confirma somente 
 
 test('página inicial não revela convidados nem presentes sem token', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'Pedro & Maria', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Maria & Pedro', level: 1 })).toBeVisible()
   await expect(page.getByText('Recebeu nosso convite?', { exact: false })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Comprei esse ou similar' })).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

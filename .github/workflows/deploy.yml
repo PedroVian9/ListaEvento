@@ -1,0 +1,66 @@
+name: Deploy Casa Nova
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Oracle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configurar SSH
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          OCI_HOST: ${{ secrets.OCI_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          ssh-keyscan -H "$OCI_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        shell: bash
+        env:
+          OCI_HOST: ${{ secrets.OCI_HOST }}
+          OCI_USER: ${{ secrets.OCI_USER }}
+        run: |
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            "$OCI_USER@$OCI_HOST" << 'EOF'
+
+            set -e
+
+            echo "==> Entrando no projeto"
+            cd /home/ubuntu/ListaEvento
+
+            echo "==> Atualizando código"
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "==> Build e deploy"
+            docker compose up -d --build casanova
+
+            echo "==> Verificando aplicação"
+            sleep 5
+
+            curl --fail \
+              --silent \
+              --show-error \
+              https://casanova.pedrovian9.site/api/health
+
+            echo ""
+            echo "==> Deploy concluído"
+          EOF

@@ -73,7 +73,7 @@ class GiftInput(Input):
 
 class EventInput(Input):
     nome_evento: str = Field(default="Chá de Panela", min_length=1, max_length=150)
-    nome_casal: str = Field(default="Pedro & Maria", min_length=1, max_length=150)
+    nome_casal: str = Field(default="Maria & Pedro", min_length=1, max_length=150)
     data: date | None = None
     hora: time | None = None
     endereco: str = Field(default="", max_length=500)

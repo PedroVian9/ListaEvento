@@ -138,7 +138,7 @@ def test_reject_unsafe_urls(admin, url):
 
 def test_event_settings_and_sharing(admin):
     settings = admin.get("/api/admin/configuracoes").json()
-    settings.update({"nome_casal": "Pedro & Maria", "data": "2026-10-18", "hora": "16:00", "endereco": "Local de teste"})
+    settings.update({"nome_casal": "Maria & Pedro", "data": "2026-10-18", "hora": "16:00", "endereco": "Local de teste"})
     assert admin.put("/api/admin/configuracoes", json=settings).status_code == 200
     assert admin.get("/api/evento").json()["data"] == "2026-10-18"
     image = admin.get("/api/og-image.png")

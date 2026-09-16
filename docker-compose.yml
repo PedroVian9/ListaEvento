@@ -1,0 +1,18 @@
+services:
+  casanova:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./data:/data
+    expose:
+      - "8000"
+    networks:
+      - edge
+    restart: unless-stopped
+
+networks:
+  edge:
+    external: true
