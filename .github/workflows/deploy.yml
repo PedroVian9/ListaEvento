@@ -70,64 +70,66 @@ jobs:
           ssh \
             -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
-            "$OCI_USER@$OCI_HOST" << EOF
+            "$OCI_USER@$OCI_HOST" << 'EOF'
 
-            set -e
+          set -e
 
-            echo "==> Atualizando repositório"
-            cd /home/ubuntu/ListaEvento
+          echo "==> Atualizando repositório"
+          cd /home/ubuntu/ListaEvento
 
-            git fetch origin main
-            git reset --hard origin/main
+          git fetch origin main
+          git reset --hard origin/main
 
-            echo "==> Autenticando no GHCR"
-            echo "${{ github.token }}" | docker login ghcr.io \
-              -u "${{ github.actor }}" \
-              --password-stdin
+          echo "==> Autenticando no GHCR"
+          echo "${{ github.token }}" | docker login ghcr.io \
+            -u "${{ github.actor }}" \
+            --password-stdin
 
-            echo "==> Baixando imagem"
-            docker compose pull casanova
+          echo "==> Baixando imagem"
+          docker compose pull casanova
 
-                       echo "==> Atualizando container"
-            docker compose up -d --force-recreate casanova
+          echo "==> Atualizando container"
+          docker compose up -d --force-recreate casanova
 
-            echo "==> Estado do container"
-            docker compose ps
+          echo "==> Estado do container"
+          docker compose ps
 
-            echo "==> Aguardando aplicação ficar disponível"
+          echo "==> Aguardando aplicação ficar disponível"
 
-            for attempt in $(seq 1 24); do
-              echo "Tentativa ${attempt}/24"
+          for attempt in $(seq 1 24); do
+            echo "Tentativa ${attempt}/24"
 
-              if curl \
-                --fail \
-                --silent \
-                --show-error \
-                --connect-timeout 5 \
-                --max-time 10 \
-                https://casanova.pedrovian9.site/api/health; then
+            if curl \
+              --fail \
+              --silent \
+              --show-error \
+              --connect-timeout 5 \
+              --max-time 10 \
+              https://casanova.pedrovian9.site/api/health; then
 
-                echo ""
-                echo "==> Aplicação saudável"
-                break
-              fi
+              echo ""
+              echo "==> Aplicação saudável"
+              break
+            fi
 
-              if [ "$attempt" -eq 24 ]; then
-                echo "==> Aplicação não ficou disponível"
+            if [ "$attempt" -eq 24 ]; then
+              echo "==> Aplicação não ficou disponível"
 
-                echo "==> Estado dos containers"
-                docker compose ps
+              echo "==> Estado dos containers"
+              docker compose ps
 
-                echo "==> Logs do Casa Nova"
-                docker compose logs --no-color --tail=200 casanova
+              echo "==> Logs do Casa Nova"
+              docker compose logs --no-color --tail=200 casanova
 
-                exit 1
-              fi
+              exit 1
+            fi
 
-              sleep 5
-            done
+            sleep 5
+          done
 
-            echo "==> Limpando imagens antigas"
-            docker image prune -f
+          echo "==> Limpando imagens antigas"
+          docker image prune -f
 
-            echo "==> Deploy concluído"
+          echo "==> Deploy concluído"
+
+          EOF
