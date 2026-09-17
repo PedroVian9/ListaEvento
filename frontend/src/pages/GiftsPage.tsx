@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
-import { Alert, Box, Button, Card, CardContent, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, InputAdornment, LinearProgress, Menu, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, InputAdornment, Menu, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material'
 import { Add, EditOutlined, MoreVert, Search } from '@mui/icons-material'
 import { api, json, message, useResource } from '../api'
 import { ConfirmDialog, Empty, ErrorState, Loading, ProductImage, useToast } from '../components'
 import type { Gift, GiftInput } from '../types'
 import { GiftValue } from '../GiftValue'
+import { GiftCard, GiftGrid } from '../GiftCard'
 
 const blank: GiftInput = { nome: '', descricao: '', imagem_url: '', produto_url: '', valor: null, quantidade_desejada: 1, ordem: 0, ativo: true }
 export function GiftsPage() {
@@ -43,12 +44,12 @@ export function GiftsPage() {
     <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={2}><Box><Typography variant="h3">Presentes</Typography><Typography color="text.secondary" sx={{ mt: 1 }}>Sugestões para deixar a nova casa com a nossa cara.</Typography></Box><Button variant="contained" startIcon={<Add />} onClick={() => openForm()}>Novo presente</Button></Stack>
     <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}><TextField label="Buscar presente" size="small" value={search} onChange={e => setSearch(e.target.value)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search /></InputAdornment> } }} /><TextField select size="small" label="Exibir" value={filter} onChange={e => setFilter(e.target.value)} sx={{ maxWidth: { sm: 190 } }}><MenuItem value="todos">Todos</MenuItem><MenuItem value="ativos">Ativos</MenuItem><MenuItem value="inativos">Inativos</MenuItem></TextField></Stack>
     {loading && !data ? <Loading /> : error ? <ErrorState error={error} retry={refresh} /> : !data?.length ? <Empty title="O começo da nossa casa" description="Adicione os presentes que vocês gostariam de ganhar. Os convidados também poderão escolher produtos similares." action={<Button startIcon={<Add />} onClick={() => openForm()}>Adicionar presente</Button>} /> : !filtered.length ? <Empty title="Nenhum presente encontrado" /> :
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, gap: 2.5 }}>{filtered.map(gift => <Card key={gift.id} sx={{ opacity: gift.ativo ? 1 : .7 }}><ProductImage url={gift.imagem_url} name={gift.nome} /><CardContent>
-        <Stack direction="row" justifyContent="space-between" gap={1} alignItems="start"><Typography variant="h5">{gift.nome}</Typography><Chip size="small" label={!gift.ativo ? 'Inativo' : gift.completo ? 'Completo' : `Faltam ${gift.quantidade_restante}`} color={!gift.ativo ? 'default' : gift.completo ? 'success' : 'primary'} variant="outlined" /></Stack>
-        <GiftValue value={gift.valor} />
-        <Typography color="text.secondary" variant="body2" sx={{ mt: 2, mb: 1 }}>{gift.quantidade_comprada} de {gift.quantidade_desejada} comprados</Typography><LinearProgress variant="determinate" value={Math.min(100, gift.quantidade_comprada / gift.quantidade_desejada * 100)} />
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}><Typography variant="caption" color="text.secondary">Ordem: {gift.ordem}</Typography><Stack direction="row"><Button startIcon={<EditOutlined />} onClick={() => openForm(gift)}>Editar</Button><IconButton aria-label={`Mais ações para ${gift.nome}`} onClick={e => setMenu({ anchor: e.currentTarget, gift })}><MoreVert /></IconButton></Stack></Stack>
-      </CardContent></Card>)}</Box>}
+      <GiftGrid>{filtered.map(gift => <GiftCard key={gift.id} gift={gift}>
+        <Stack direction="row" alignItems="center" gap={.5}>
+          <Button startIcon={<EditOutlined />} onClick={() => openForm(gift)} sx={{ flex: 1, minWidth: 0, px: .5, fontSize: { xs: 12, sm: 13 } }}>Editar</Button>
+          <IconButton aria-label={`Mais ações para ${gift.nome}`} onClick={e => setMenu({ anchor: e.currentTarget, gift })} sx={{ width: 44, height: 44 }}><MoreVert /></IconButton>
+        </Stack>
+      </GiftCard>)}</GiftGrid>}
     <Menu anchorEl={menu?.anchor} open={!!menu} onClose={() => setMenu(null)}><MenuItem disabled={!menu?.gift.ativo} onClick={() => { if (menu) { setConfirm(menu.gift); setMenu(null) } }}>Desativar presente</MenuItem></Menu>
     <ConfirmDialog open={!!confirm} busy={busy} title="Desativar presente?" description="O presente deixará de aparecer no convite. As compras serão preservadas e você poderá reativá-lo ao editar." action="Desativar" onClose={() => setConfirm(null)} onConfirm={deactivate} />
     <Dialog open={!!editing} onClose={busy ? undefined : () => setEditing(null)}><Box component="form" onSubmit={save}><DialogTitle>{editing === 'new' ? 'Novo presente' : 'Editar presente'}</DialogTitle><DialogContent><Stack gap={2.5} sx={{ pt: 1 }}>

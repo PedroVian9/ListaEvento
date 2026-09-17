@@ -25,7 +25,7 @@ test('valor do presente: cadastro, visual, edição e remoção', async ({ page 
     await page.getByLabel('Buscar presente', { exact: true }).fill(name)
   }
   await openInvitation()
-  await expect(card.getByText('Valor sugerido · unidade')).toBeVisible()
+  await expect(card.getByText('Valor sugerido · unidade')).toHaveCount(0)
   await expect(card.getByText(/R\$\s*129,90/)).toBeVisible()
   await card.screenshot({ path: testInfo.outputPath('presente-valor.png') })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
@@ -38,7 +38,7 @@ test('valor do presente: cadastro, visual, edição e remoção', async ({ page 
     await dialog.getByRole('button', { name: 'Salvar presente' }).click()
     await expect(dialog).not.toBeVisible()
     await openInvitation()
-    if (value === '') await expect(card.getByText('Valor sugerido · unidade')).toHaveCount(0)
+    if (value === '') await expect(card.getByText(/R\$/)).toHaveCount(0)
     else await expect(card.getByText(value === '0' ? /R\$\s*0,00/ : /R\$\s*999\.999,99/)).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   }

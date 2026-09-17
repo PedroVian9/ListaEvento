@@ -20,9 +20,9 @@ export function TileBand({ small = false }: { small?: boolean }) {
 
 export function ProductImage({ url, name, compact = false }: { url: string; name: string; compact?: boolean }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
-  return <Box sx={{ height: compact ? { xs: 112, sm: 128 } : { xs: 132, sm: 156, md: 172 }, bgcolor: '#F3F6FA', overflow: 'hidden', display: 'grid', placeItems: 'center', width: '100%' }}>
-    {url && failedUrl !== url ? <Box component="img" src={url} alt={name} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailedUrl(url)} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} /> :
-      <Stack alignItems="center" gap={1} sx={{ color: '#8196B4', p: 2 }}><CardGiftcardOutlined sx={{ fontSize: compact ? 28 : 44 }} />{!compact && <Typography variant="caption">Imagem indisponível</Typography>}</Stack>}
+  return <Box sx={{ height: compact ? { xs: 120, sm: 144 } : { xs: 132, sm: 156, md: 172 }, bgcolor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', p: 1, flexShrink: 0 }}>
+    {url && failedUrl !== url ? <Box component="img" src={url} alt={name} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailedUrl(url)} sx={{ display: 'block', width: '100%', height: '100%', minWidth: 0, objectFit: 'contain' }} /> :
+      <Stack alignItems="center" gap={1} sx={{ color: '#8196B4', p: 1 }}><CardGiftcardOutlined sx={{ fontSize: compact ? 28 : 44 }} /><Typography variant="caption" sx={{ textAlign: 'center' }}>Imagem indisponível</Typography></Stack>}
   </Box>
 }
 

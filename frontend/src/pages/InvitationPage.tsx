@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link as RouterLink, useParams } from 'react-router-dom'
-import { Alert, AppBar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, InputAdornment, LinearProgress, Link, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
-import { ArrowOutward, CalendarMonthOutlined, CheckCircleOutline, FavoriteBorder, LocationOnOutlined, LockOutlined, ScheduleOutlined, Search } from '@mui/icons-material'
+import { Alert, AppBar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, InputAdornment, Link, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { ArrowOutward, CalendarMonthOutlined, FavoriteBorder, LocationOnOutlined, LockOutlined, ScheduleOutlined, Search } from '@mui/icons-material'
 import { api, json, message, useResource } from '../api'
-import { Counter, Empty, ErrorState, Loading, ProductImage, TileBand, useToast } from '../components'
+import { Counter, Empty, ErrorState, Loading, TileBand, useToast } from '../components'
 import type { EventInfo, Gift, Invitation } from '../types'
 import { AttendanceDialog } from './AttendanceDialog'
-import { GiftValue } from '../GiftValue'
+import { GiftCard, GiftGrid } from '../GiftCard'
 
 export function InvitationPage() {
   const { token } = useParams()
@@ -70,7 +70,7 @@ function EventContent({ event, invitation, token }: { event: EventInfo; invitati
         <Card id="presenca" sx={{ bgcolor: '#F4F8FF', borderColor: '#DAE5F4', mb: { xs: 7, md: 10 } }}>
           <CardContent sx={{ p: { xs: 3, md: 5 }, '&:last-child': { pb: { xs: 3, md: 5 } } }}>
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, alignItems: 'center', gap: 4 }}>
-              <Box><Chip icon={<FavoriteBorder />} label="Sua presença faz a diferença" size="small" sx={{ bgcolor: 'white', color: 'primary.main', mb: 2 }} /><Typography variant="h2" sx={{ fontSize: { xs: 30, md: 35 }, mb: 1.5 }}>{attendanceClosed ? 'Confirmações encerradas' : 'Você poderá participar?'}</Typography><Typography color="text.secondary">{attendanceClosed ? `O prazo para confirmar presença encerrou em ${deadlineText}.` : deadlineText ? `Confirme sua presença até ${deadlineText}. Você poderá atualizar sua resposta até essa data.` : 'Queremos preparar tudo com carinho para receber você. Pode mudar de ideia e atualizar sua resposta por aqui.'}</Typography></Box>
+              <Box><Chip icon={<FavoriteBorder />} label="Sua presença faz a diferença" size="small" sx={{ bgcolor: 'white', color: 'primary.main', mb: 2 }} /><Typography variant="h2" sx={{ fontSize: { xs: 30, md: 35 }, mb: 1.5 }}>{attendanceClosed ? 'Confirmações encerradas' : 'Você poderá participar?'}</Typography><Typography color="text.secondary">{attendanceClosed ? `O prazo para confirmar presença encerrou em ${deadlineText}.` : deadlineText ? <>Confirme sua presença até <Box component="strong" sx={{ fontWeight: 700 }}>{deadlineText}</Box>. Você poderá atualizar sua resposta até essa data.</> : 'Queremos preparar tudo com carinho para receber você. Pode mudar de ideia e atualizar sua resposta por aqui.'}</Typography></Box>
               <Stack gap={2}>
                 {attendanceClosed && <Alert severity="info">{status === 'PENDENTE' ? 'O prazo de confirmação foi encerrado.' : 'Sua resposta continua disponível para consulta, mas não pode mais ser alterada.'}</Alert>}
                 {status !== 'PENDENTE' && <>
@@ -156,18 +156,12 @@ function GiftList({ token, event }: { token: string; event: EventInfo }) {
       </Stack>
     </>}
     {error ? <ErrorState error={error} retry={refresh} /> : loading && !gifts ? <Loading /> : !gifts?.length ? <Empty title="Nossa lista está a caminho" description="Nossa lista de presentes será disponibilizada em breve." /> : !filtered.length ? <Empty title="Nenhum presente encontrado" description="Experimente outra busca ou faixa de preço." action={<Button onClick={clearFilters}>Limpar filtros</Button>} /> :
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(3, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }, gap: { xs: 1.25, sm: 2 } }}>
-        {filtered.map(gift => <Card key={gift.id} sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'box-shadow .2s ease, transform .2s ease', '&:hover': { boxShadow: '0 8px 24px rgba(13, 47, 111, .10)', transform: { sm: 'translateY(-2px)' } } }}>
-          <Box sx={{ position: 'relative' }}><ProductImage url={gift.imagem_url} name={gift.nome} compact />{gift.completo && <Chip icon={<CheckCircleOutline />} label="Completo" color="success" size="small" sx={{ position: 'absolute', top: 8, right: 8, height: 24, bgcolor: '#EAF5EE', '& .MuiChip-label': { px: .75 } }} />}</Box>
-          <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } }, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Typography variant="h6" sx={{ fontSize: { xs: 15, sm: 17 }, lineHeight: 1.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{gift.nome}</Typography>{gift.descricao && <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: '-webkit-box' }, fontSize: 13, overflow: 'hidden', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{gift.descricao}</Typography>}
-            <Box sx={{ mt: 'auto' }}><GiftValue value={gift.valor} /></Box>
-            <Box sx={{ pt: .5 }}><Stack direction="row" justifyContent="space-between" gap={.5} sx={{ mb: .75 }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: 10, sm: 11 }, whiteSpace: 'nowrap' }}>{gift.quantidade_comprada} de {gift.quantidade_desejada}</Typography><Typography variant="caption" color={gift.completo ? 'success.main' : 'primary.main'} sx={{ fontSize: { xs: 10, sm: 11 }, whiteSpace: 'nowrap' }}>{gift.completo ? 'Obrigado! 💙' : `Faltam ${gift.quantidade_restante}`}</Typography></Stack><LinearProgress variant="determinate" value={Math.min(100, gift.quantidade_comprada / gift.quantidade_desejada * 100)} color={gift.completo ? 'success' : 'primary'} /></Box>
+      <GiftGrid>
+        {filtered.map(gift => <GiftCard key={gift.id} gift={gift}>
             {gift.produto_url && <Button href={gift.produto_url} target="_blank" rel="noopener noreferrer" fullWidth variant="outlined" endIcon={<ArrowOutward fontSize="small" />} size="small" sx={{ mt: .25, px: .5, fontSize: { xs: 11, sm: 13 } }}>Ver sugestão</Button>}
             <Button variant="contained" fullWidth size="small" disabled={gift.completo} onClick={() => { setSelected(gift); setQuantity(1); setPurchaseError('') }} sx={{ px: .5, fontSize: { xs: 11, sm: 13 } }}>{gift.completo ? 'Completo ✓' : 'Comprei esse ou similar'}</Button>
-          </CardContent>
-        </Card>)}
-      </Box>}
+        </GiftCard>)}
+      </GiftGrid>}
     <Stack direction="row" justifyContent="center" gap={1} sx={{ mt: 4, color: 'text.secondary' }}><LockOutlined sx={{ fontSize: 16, mt: .25 }} /><Typography variant="caption">Seu nome não aparece na lista de presentes.</Typography></Stack>
     <Dialog open={!!selected} onClose={busy ? undefined : () => setSelected(null)}><DialogTitle>Um carinho para nossa casa</DialogTitle><DialogContent>
       <Typography sx={{ mb: 1, fontWeight: 600 }}>{selected?.nome}</Typography><Typography color="text.secondary" sx={{ mb: 3 }}>Já comprou esse presente ou um similar? Registre a quantidade para mantermos a lista atualizada.</Typography>
