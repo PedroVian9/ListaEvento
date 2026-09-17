@@ -1,5 +1,36 @@
 import { expect, test } from '@playwright/test'
 
+test('presentes entram no final e podem ser reordenados', async ({ page }, testInfo) => {
+  await page.request.post('/api/admin/auth/login', { data: { username: 'browser-test', password: 'browser-test-only-password' } })
+  const prefix = `Ordem ${testInfo.project.name} ${Date.now()}`
+  const ids: number[] = []
+  for (const name of ['A', 'B', 'C']) {
+    const response = await page.request.post('/api/admin/presentes', { data: { nome: `${prefix} ${name}`, imagem_url: 'https://example.com/gift.jpg', ordem: 0 } })
+    ids.push((await response.json()).id)
+  }
+  await page.route('https://example.com/**', route => route.abort())
+  await page.goto('/admin/presentes')
+  const cards = page.locator('[data-gift-id]').filter({ hasText: prefix })
+  await expect(cards).toHaveCount(3)
+  const handle = page.getByRole('button', { name: `Ordenar ${prefix} C`, exact: true })
+  await handle.scrollIntoViewIfNeeded()
+  const target = page.locator(`[data-gift-id="${ids[1]}"]`)
+  const start = await handle.boundingBox()
+  await page.mouse.move(start!.x + start!.width / 2, start!.y + start!.height / 2)
+  await page.mouse.down()
+  await target.scrollIntoViewIfNeeded()
+  const box = await target.boundingBox()
+  await page.mouse.move(box!.x + 60, box!.y + 60, { steps: 10 })
+  await page.mouse.up()
+  await expect(cards.nth(1)).toHaveAttribute('data-gift-id', String(ids[2]))
+  await page.reload()
+  await expect(cards.nth(1)).toHaveAttribute('data-gift-id', String(ids[2]))
+  await page.getByRole('button', { name: `Ordenar ${prefix} C`, exact: true }).press('ArrowLeft')
+  await expect(cards.first()).toHaveAttribute('data-gift-id', String(ids[2]))
+  await page.getByLabel('Buscar presente').fill(prefix)
+  await expect(page.getByRole('button', { name: `Ordenar ${prefix} C`, exact: true })).toBeDisabled()
+})
+
 test('administração, convite, presença, presentes e regeneração de link', async ({ page }, testInfo) => {
   const suffix = `${testInfo.project.name}-${Date.now()}`
   const guestName = `Convidado ${suffix}`

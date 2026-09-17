@@ -130,6 +130,39 @@ def test_regeneration_and_soft_delete(admin):
     assert len(admin.get(f'/api/convites/{renewed["token"]}/presentes').json()) == 1
 
 
+def test_gifts_append_and_reorder_atomically(admin):
+    first, body = gift(admin)
+    assert first['ordem'] == 0
+    admin.put(f'/api/admin/presentes/{first["id"]}', json={**body, 'ordem': 10000, 'ativo': False})
+    second = admin.post('/api/admin/presentes', json={**body, 'ordem': 0}).json()
+    assert second['ordem'] == 10001
+    third, _ = gift(admin)
+    ids = [third['id'], first['id'], second['id']]
+    result = admin.put('/api/admin/presentes/ordem', json={'ids': ids})
+    assert result.status_code == 200
+    assert [g['id'] for g in result.json()] == ids
+    assert [g['ordem'] for g in result.json()] == [0, 1, 2]
+    for invalid in (ids[:-1], [ids[0], ids[0], ids[2]], [*ids, 99999]):
+        assert admin.put('/api/admin/presentes/ordem', json={'ids': invalid}).status_code == 409
+        assert [g['id'] for g in admin.get('/api/admin/presentes').json()] == ids
+    last, _ = gift(admin)
+    assert last['ordem'] == 3
+    person = guest(admin)
+    public = admin.get(f'/api/convites/{person["token"]}/presentes').json()
+    assert [g['id'] for g in public] == [third['id'], second['id'], last['id']]
+
+
+def test_concurrent_gift_creation_appends(admin):
+    barrier = Barrier(2)
+
+    def create(_):
+        barrier.wait()
+        return gift(admin)[0]['ordem']
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert sorted(pool.map(create, range(2))) == [0, 1]
+
+
 @pytest.mark.parametrize("url", ["javascript:alert(1)", "data:text/html,test", "ftp://example.com/x", "https://user:password@example.com/x", "/local.png"])
 def test_reject_unsafe_urls(admin, url):
     assert admin.post("/api/admin/presentes", json={"nome": "X", "imagem_url": url}).status_code == 422

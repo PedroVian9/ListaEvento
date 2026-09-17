@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from .database import get_db
 from .models import Gift, Guest, GuestMember
-from .schemas import EventInput, GiftInput, GuestInput
+from .schemas import EventInput, GiftInput, GiftOrderInput, GuestInput
 from .services import admin_guest, assign_invitation_link, bought, get_event, gift_data, list_gifts, require_admin, save_event, sync_family_status
 
 router = APIRouter(prefix="/api/admin", tags=["Administração"], dependencies=[Depends(require_admin)])
@@ -126,10 +126,24 @@ def gifts(db: Session = Depends(get_db)):
 
 @router.post("/presentes", status_code=201)
 def create_gift(data: GiftInput, db: Session = Depends(get_db)):
+    write_lock(db)
     gift = Gift(**data.model_dump())
+    gift.ordem = db.scalar(select(func.coalesce(func.max(Gift.ordem), -1))) + 1
     db.add(gift)
     db.commit()
     return gift_data(gift, 0)
+
+
+@router.put("/presentes/ordem")
+def reorder_gifts(data: GiftOrderInput, db: Session = Depends(get_db)):
+    write_lock(db)
+    gifts = {gift.id: gift for gift in db.scalars(select(Gift))}
+    if len(data.ids) != len(set(data.ids)) or set(data.ids) != set(gifts):
+        raise HTTPException(409, "A lista de presentes mudou. Atualize a página e tente novamente.")
+    for position, gift_id in enumerate(data.ids):
+        gifts[gift_id].ordem = position
+    db.commit()
+    return list_gifts(db)
 
 
 @router.put("/presentes/{gift_id}")

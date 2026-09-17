@@ -57,7 +57,7 @@ class GiftInput(Input):
     imagem_url: str = Field(min_length=1, max_length=2048)
     produto_url: str = Field(default="", max_length=2048)
     quantidade_desejada: int = Field(default=1, ge=1, le=10000, strict=True)
-    ordem: int = Field(default=0, ge=0, le=10000, strict=True)
+    ordem: int = Field(default=0, ge=0, strict=True)
     ativo: bool = True
 
     @field_validator("imagem_url")
@@ -69,6 +69,10 @@ class GiftInput(Input):
     @classmethod
     def product_url(cls, value):
         return safe_url(value)
+
+
+class GiftOrderInput(Input):
+    ids: list[StrictInt]
 
 
 class EventInput(Input):
