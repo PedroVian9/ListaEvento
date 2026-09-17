@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link as RouterLink, useParams } from 'react-router-dom'
-import { Alert, AppBar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, InputAdornment, LinearProgress, Link, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
+import { Alert, AppBar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, InputAdornment, LinearProgress, Link, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { ArrowOutward, CalendarMonthOutlined, CheckCircleOutline, FavoriteBorder, LocationOnOutlined, LockOutlined, ScheduleOutlined, Search } from '@mui/icons-material'
 import { api, json, message, useResource } from '../api'
 import { Counter, Empty, ErrorState, Loading, ProductImage, TileBand, useToast } from '../components'
@@ -93,16 +93,33 @@ function Detail({ icon, title }: { icon: React.ReactNode; title: string }) {
   return <Stack direction="row" alignItems="center" gap={2} textAlign="left"><Box sx={{ color: 'primary.main', display: 'flex', bgcolor: '#EDF4FF', borderRadius: 2, p: 1.2 }}>{icon}</Box><Typography sx={{ fontSize: 14, fontWeight: 500, overflowWrap: 'anywhere' }}>{title}</Typography></Stack>
 }
 
+const priceRanges = [
+  { id: 'ate50', label: 'Até R$ 50', min: 0, max: 50 },
+  { id: '50a100', label: 'R$ 50,01 a R$ 100', min: 50.01, max: 100 },
+  { id: '100a200', label: 'R$ 100,01 a R$ 200', min: 100.01, max: 200 },
+  { id: '200a500', label: 'R$ 200,01 a R$ 500', min: 200.01, max: 500 },
+  { id: 'acima500', label: 'Acima de R$ 500', min: 500.01, max: Infinity },
+]
+
 function GiftList({ token, event }: { token: string; event: EventInfo }) {
   const { data: gifts, error, loading, refresh } = useResource<Gift[]>(`/convites/${token}/presentes`)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('todos')
+  const [priceFilter, setPriceFilter] = useState('todos')
   const [selected, setSelected] = useState<Gift | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [busy, setBusy] = useState(false)
   const [purchaseError, setPurchaseError] = useState('')
   const toast = useToast()
-  const filtered = gifts?.filter(g => g.nome.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')) && (filter === 'todos' || (filter === 'completos' ? g.completo : !g.completo))) || []
+  const priceRange = priceRanges.find(range => range.id === priceFilter)
+  const filtered = gifts?.filter(g => {
+    if (!g.nome.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))) return false
+    if (filter !== 'todos' && (filter === 'completos' ? !g.completo : g.completo)) return false
+    if (priceFilter === 'semvalor') return g.valor == null
+    if (priceRange) return g.valor != null && Number(g.valor) >= priceRange.min && Number(g.valor) <= priceRange.max
+    return true
+  }) || []
+  function clearFilters() { setSearch(''); setFilter('todos'); setPriceFilter('todos') }
   async function purchase() {
     if (!selected) return
     setBusy(true); setPurchaseError('')
@@ -126,12 +143,19 @@ function GiftList({ token, event }: { token: string; event: EventInfo }) {
     </Stack>
     {gifts && gifts.length > 0 && <>
       {gifts.every(g => g.completo) && <Alert severity="success" sx={{ mb: 3 }}>Nossa lista já está completa. Muito obrigado pelo carinho! 💙</Alert>}
-      <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2} sx={{ mb: 3 }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ md: 'center' }} justifyContent="space-between" gap={2} sx={{ mb: 3 }}>
         <Tabs value={filter} onChange={(_, v) => setFilter(v)} aria-label="Filtrar presentes"><Tab value="todos" label="Todos" /><Tab value="disponiveis" label="Disponíveis" /><Tab value="completos" label="Completos" /></Tabs>
-        <TextField size="small" label="Buscar presente" value={search} onChange={e => setSearch(e.target.value)} sx={{ maxWidth: { sm: 300 } }} slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> } }} />
+        <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} sx={{ width: { xs: '100%', md: 480 }, maxWidth: '100%' }}>
+          <TextField size="small" label="Buscar presente" value={search} onChange={e => setSearch(e.target.value)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> } }} />
+          <TextField select size="small" label="Faixa de preço" value={priceFilter} onChange={e => setPriceFilter(e.target.value)}>
+            <MenuItem value="todos">Todos os preços</MenuItem>
+            {priceRanges.map(range => <MenuItem key={range.id} value={range.id}>{range.label}</MenuItem>)}
+            <MenuItem value="semvalor">Sem preço informado</MenuItem>
+          </TextField>
+        </Stack>
       </Stack>
     </>}
-    {error ? <ErrorState error={error} retry={refresh} /> : loading && !gifts ? <Loading /> : !gifts?.length ? <Empty title="Nossa lista está a caminho" description="Nossa lista de presentes será disponibilizada em breve." /> : !filtered.length ? <Empty title="Nenhum presente encontrado" description="Experimente outra busca ou selecione outro filtro." /> :
+    {error ? <ErrorState error={error} retry={refresh} /> : loading && !gifts ? <Loading /> : !gifts?.length ? <Empty title="Nossa lista está a caminho" description="Nossa lista de presentes será disponibilizada em breve." /> : !filtered.length ? <Empty title="Nenhum presente encontrado" description="Experimente outra busca ou faixa de preço." action={<Button onClick={clearFilters}>Limpar filtros</Button>} /> :
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(3, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }, gap: { xs: 1.25, sm: 2 } }}>
         {filtered.map(gift => <Card key={gift.id} sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'box-shadow .2s ease, transform .2s ease', '&:hover': { boxShadow: '0 8px 24px rgba(13, 47, 111, .10)', transform: { sm: 'translateY(-2px)' } } }}>
           <Box sx={{ position: 'relative' }}><ProductImage url={gift.imagem_url} name={gift.nome} compact />{gift.completo && <Chip icon={<CheckCircleOutline />} label="Completo" color="success" size="small" sx={{ position: 'absolute', top: 8, right: 8, height: 24, bgcolor: '#EAF5EE', '& .MuiChip-label': { px: .75 } }} />}</Box>
