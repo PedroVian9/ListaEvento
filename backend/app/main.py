@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from .admin import router as admin_router
 from .config import settings
-from .database import Base, SessionLocal, engine, get_db
+from .database import Base, SessionLocal, engine, get_db, migrate_gift_value
 from .models import Admin, Guest
 from .public import router as public_router
 from .schemas import Login
@@ -24,6 +24,7 @@ from .services import COOKIE, assign_invitation_link, get_event, hash_password, 
 @asynccontextmanager
 async def lifespan(app):
     Base.metadata.create_all(engine)
+    migrate_gift_value()
     with SessionLocal() as db:
         db.execute(text("BEGIN IMMEDIATE"))
         admin = db.scalar(select(Admin).where(Admin.username == settings.admin_username))

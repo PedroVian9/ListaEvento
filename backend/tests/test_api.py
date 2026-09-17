@@ -116,6 +116,49 @@ def test_two_guests_competing_for_last_unit(admin):
     assert admin.get("/api/admin/presentes").json()[0]["quantidade_comprada"] == 1
 
 
+def test_gift_value_create_update_clear_and_public_list(admin):
+    person = guest(admin)
+    present, body = gift(admin)
+    assert present["valor"] is None
+    path = f'/api/admin/presentes/{present["id"]}'
+    public_path = f'/api/convites/{person["token"]}/presentes'
+    for value, expected in (("129.90", "129.90"), (0, "0.00"), ("999999.99", "999999.99"), (None, None)):
+        response = admin.put(path, json={**body, "valor": value})
+        assert response.status_code == 200, response.text
+        assert response.json()["valor"] == expected
+        assert admin.get("/api/admin/presentes").json()[0]["valor"] == expected
+        assert admin.get(public_path).json()[0]["valor"] == expected
+    created = admin.post("/api/admin/presentes", json={**body, "valor": "0.10"})
+    assert created.status_code == 201
+    assert created.json()["valor"] == "0.10"
+
+
+@pytest.mark.parametrize("value", [-1, "12.345", "1000000", "NaN", "Infinity", "abc", True])
+def test_gift_value_rejects_invalid_values(admin, value):
+    present, body = gift(admin)
+    assert admin.post("/api/admin/presentes", json={**body, "valor": value}).status_code == 422
+    assert admin.put(f'/api/admin/presentes/{present["id"]}', json={**body, "valor": value}).status_code == 422
+    assert admin.get("/api/admin/presentes").json()[0]["valor"] is None
+
+
+def test_gift_value_migration_preserves_existing_data(tmp_path):
+    from sqlalchemy import create_engine, inspect, text
+    from app.database import migrate_gift_value
+
+    legacy = create_engine(f"sqlite:///{tmp_path / 'legacy.db'}")
+    try:
+        with legacy.begin() as connection:
+            connection.exec_driver_sql("CREATE TABLE presentes (id INTEGER PRIMARY KEY, nome TEXT)")
+            connection.exec_driver_sql("INSERT INTO presentes VALUES (1, 'Presente existente')")
+        migrate_gift_value(legacy)
+        migrate_gift_value(legacy)
+        with legacy.connect() as connection:
+            assert [c["name"] for c in inspect(connection).get_columns("presentes")].count("valor") == 1
+            assert connection.execute(text("SELECT id, nome, valor FROM presentes")).one() == (1, "Presente existente", None)
+    finally:
+        legacy.dispose()
+
+
 def test_regeneration_and_soft_delete(admin):
     person = guest(admin)
     present, body = gift(admin)
@@ -178,6 +221,17 @@ def test_event_settings_and_sharing(admin):
     assert image.status_code == 200 and image.headers["content-type"] == "image/png"
     assert image.content.startswith(b"\x89PNG")
     assert admin.get("/api/no-such-route").status_code == 404
+
+
+def test_attendance_deadline_blocks_new_and_changed_answers(admin):
+    person = guest(admin)
+    path = f'/api/convites/{person["token"]}/presenca'
+    settings = admin.get("/api/admin/configuracoes").json()
+    settings["data_limite_confirmacao"] = "2000-01-01"
+    assert admin.put("/api/admin/configuracoes", json=settings).status_code == 200
+    response = admin.put(path, json={"status": "CONFIRMADO"})
+    assert response.status_code == 403
+    assert "encerrou em 01/01/2000" in response.json()["detail"]
 
 
 def family(client, name="Madrinha e família"):

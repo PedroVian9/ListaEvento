@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -24,6 +26,10 @@ def invitation(token: str, db: Session = Depends(get_db)):
 def attendance(token: str, data: Attendance, db: Session = Depends(get_db)):
     db.execute(text("BEGIN IMMEDIATE"))
     guest = find_guest(db, token)
+    event = get_event(db)
+    deadline = event["data_limite_confirmacao"]
+    if deadline and date.fromisoformat(deadline) < date.today():
+        raise HTTPException(403, "O prazo para confirmar presença encerrou em " + date.fromisoformat(deadline).strftime("%d/%m/%Y") + ".")
     expected_ids = {m.id for m in guest.membros} if guest.membros else {0}
     if data.membros_ids is not None and (set(data.membros_ids) != expected_ids or len(data.membros_ids) != len(expected_ids)):
         raise HTTPException(409, "Os nomes deste convite foram atualizados. Reabra a confirmação para conferir a lista.")
@@ -43,7 +49,7 @@ def attendance(token: str, data: Attendance, db: Session = Depends(get_db)):
             sync_family_status(guest)
             db.commit()
             return public_guest(guest)
-    companions_enabled = get_event(db)["acompanhantes_habilitados"]
+    companions_enabled = event["acompanhantes_habilitados"]
     if data.status == "CONFIRMADO" and data.quantidade_acompanhantes and not companions_enabled:
         raise HTTPException(422, "Acompanhantes não estão habilitados para este evento.")
     guest.status_presenca = data.status

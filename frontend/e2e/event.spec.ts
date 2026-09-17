@@ -96,7 +96,7 @@ test('administração, convite, presença, presentes e regeneração de link', a
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await card.getByRole('button', { name: 'Comprei esse ou similar' }).click()
   await page.getByRole('button', { name: 'Confirmar compra' }).click()
-  await expect(card.getByText('1 de 2 comprados')).toBeVisible()
+  await expect(card.getByText('1 de 2', { exact: true })).toBeVisible()
   await card.getByRole('button', { name: 'Comprei esse ou similar' }).click()
   await page.getByRole('button', { name: 'Confirmar compra' }).click()
   await expect(card.getByRole('button', { name: 'Completo ✓' })).toBeDisabled()
