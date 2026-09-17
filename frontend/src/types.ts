@@ -10,6 +10,7 @@ export interface Invitation { nome: string; status_presenca: Status; quantidade_
 export interface Guest extends Omit<Invitation, 'evento'> { id: number; token: string; slug: string; observacao: string }
 export interface Gift {
   id: number; nome: string; descricao: string; imagem_url: string; produto_url: string;
+  valor: string | null;
   quantidade_desejada: number; quantidade_comprada: number; quantidade_restante: number;
   completo: boolean; ativo: boolean; ordem: number;
 }

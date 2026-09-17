@@ -6,6 +6,7 @@ import { api, json, message, useResource } from '../api'
 import { Counter, Empty, ErrorState, Loading, ProductImage, TileBand, useToast } from '../components'
 import type { EventInfo, Gift, Invitation } from '../types'
 import { AttendanceDialog } from './AttendanceDialog'
+import { GiftValue } from '../GiftValue'
 
 export function InvitationPage() {
   const { token } = useParams()
@@ -136,7 +137,8 @@ function GiftList({ token, event }: { token: string; event: EventInfo }) {
           <Box sx={{ position: 'relative' }}><ProductImage url={gift.imagem_url} name={gift.nome} compact />{gift.completo && <Chip icon={<CheckCircleOutline />} label="Completo" color="success" size="small" sx={{ position: 'absolute', top: 8, right: 8, height: 24, bgcolor: '#EAF5EE', '& .MuiChip-label': { px: .75 } }} />}</Box>
           <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } }, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
             <Typography variant="h6" sx={{ fontSize: { xs: 15, sm: 17 }, lineHeight: 1.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{gift.nome}</Typography>{gift.descricao && <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: '-webkit-box' }, fontSize: 13, overflow: 'hidden', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{gift.descricao}</Typography>}
-            <Box sx={{ mt: 'auto', pt: .5 }}><Stack direction="row" justifyContent="space-between" gap={.5} sx={{ mb: .75 }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: 10, sm: 11 }, whiteSpace: 'nowrap' }}>{gift.quantidade_comprada} de {gift.quantidade_desejada}</Typography><Typography variant="caption" color={gift.completo ? 'success.main' : 'primary.main'} sx={{ fontSize: { xs: 10, sm: 11 }, whiteSpace: 'nowrap' }}>{gift.completo ? 'Obrigado! 💙' : `Faltam ${gift.quantidade_restante}`}</Typography></Stack><LinearProgress variant="determinate" value={Math.min(100, gift.quantidade_comprada / gift.quantidade_desejada * 100)} color={gift.completo ? 'success' : 'primary'} /></Box>
+            <Box sx={{ mt: 'auto' }}><GiftValue value={gift.valor} /></Box>
+            <Box sx={{ pt: .5 }}><Stack direction="row" justifyContent="space-between" gap={.5} sx={{ mb: .75 }}><Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: 10, sm: 11 }, whiteSpace: 'nowrap' }}>{gift.quantidade_comprada} de {gift.quantidade_desejada}</Typography><Typography variant="caption" color={gift.completo ? 'success.main' : 'primary.main'} sx={{ fontSize: { xs: 10, sm: 11 }, whiteSpace: 'nowrap' }}>{gift.completo ? 'Obrigado! 💙' : `Faltam ${gift.quantidade_restante}`}</Typography></Stack><LinearProgress variant="determinate" value={Math.min(100, gift.quantidade_comprada / gift.quantidade_desejada * 100)} color={gift.completo ? 'success' : 'primary'} /></Box>
             {gift.produto_url && <Button href={gift.produto_url} target="_blank" rel="noopener noreferrer" fullWidth variant="outlined" endIcon={<ArrowOutward fontSize="small" />} size="small" sx={{ mt: .25, px: .5, fontSize: { xs: 11, sm: 13 } }}>Ver sugestão</Button>}
             <Button variant="contained" fullWidth size="small" disabled={gift.completo} onClick={() => { setSelected(gift); setQuantity(1); setPurchaseError('') }} sx={{ px: .5, fontSize: { xs: 11, sm: 13 } }}>{gift.completo ? 'Completo ✓' : 'Comprei esse ou similar'}</Button>
           </CardContent>

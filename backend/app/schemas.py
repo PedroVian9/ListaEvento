@@ -1,4 +1,5 @@
 from datetime import date, time
+from decimal import Decimal
 from typing import Literal
 from urllib.parse import urlparse
 
@@ -56,6 +57,7 @@ class GiftInput(Input):
     descricao: str = Field(default="", max_length=2000)
     imagem_url: str = Field(min_length=1, max_length=2048)
     produto_url: str = Field(default="", max_length=2048)
+    valor: Decimal | None = Field(default=None, ge=0, le=Decimal("999999.99"), max_digits=8, decimal_places=2)
     quantidade_desejada: int = Field(default=1, ge=1, le=10000, strict=True)
     ordem: int = Field(default=0, ge=0, le=10000, strict=True)
     ativo: bool = True

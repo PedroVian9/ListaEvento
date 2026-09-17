@@ -1,7 +1,8 @@
 import secrets
+from decimal import Decimal
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -68,6 +69,7 @@ class Gift(TimestampMixin, Base):
     descricao: Mapped[str] = mapped_column(Text, default="")
     imagem_url: Mapped[str] = mapped_column(Text)
     produto_url: Mapped[str] = mapped_column(Text, default="")
+    valor: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     quantidade_desejada: Mapped[int] = mapped_column(Integer, default=1)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
     ordem: Mapped[int] = mapped_column(Integer, default=0)

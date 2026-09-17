@@ -37,7 +37,7 @@ Neste workspace, foi instalado Python por meio de uma cópia local do uv em `.to
 1. Entre em `/admin` e abra **Configurações**. Informe nome do casal, evento, data, horário, endereço, link do Maps e, se desejar, a data limite de confirmação. O prazo é inclusivo até 23h59; depois dele as respostas ficam apenas para consulta.
 2. Habilite acompanhantes se necessário. Desabilitar a opção zera as quantidades anteriores, conforme informado na tela.
 3. Cadastre o nome do convite, por exemplo **Madrinha e família**. Esse único campo forma a saudação **Olá, Madrinha e família!** e o link **/convite/madrinha-e-familia**. Para uma família, clique em **Adicionar família** e preencha todas as pessoas em **Pessoa 1**, **Pessoa 2**, etc., inclusive a titular. Copie e compartilhe um único link.
-4. Cadastre presentes, quantidade desejada e URLs externas de imagem e produto. Nenhuma imagem de produto é armazenada no projeto.
+4. Cadastre presentes, quantidade desejada e URLs externas de imagem e produto. Você também pode informar o **Valor sugerido (opcional)** por unidade, em reais (ex.: `129,90`), e conferir sua prévia no formulário. O valor aparece em destaque nos cartões da administração e do convite; deixe o campo vazio para ocultá-lo. Nenhuma imagem de produto é armazenada no projeto.
 5. Acompanhe confirmações, total de pessoas e presentes completos no painel.
 
 A raiz `/` apresenta o evento. A confirmação e a lista ficam em `/convite/{nome-do-convite}`. Nomes repetidos recebem sufixos (`-2`, `-3`, etc.). Os links antigos por token continuam aceitos. Não há convidados ou compras fictícias no banco de uso real.
@@ -89,7 +89,7 @@ A API serve o build do React e o fallback das rotas. Coloque-a atrás de um prox
 
 O HTML servido pela API inclui Open Graph com os nomes configurados e imagem PNG de azulejos gerada em memória em `/api/og-image.png`. A imagem não contém informações dos convidados. A prévia exige uma URL pública acessível ao serviço de mensagens; sua atualização pode depender do cache desse serviço. Durante o desenvolvimento pelo Vite, a substituição das tags acontece apenas ao servir o build pela API.
 
-Mantenha `database.db` em armazenamento persistente (ou configure um caminho absoluto em `DATABASE_URL=sqlite:////caminho/database.db` no Linux). Não use instâncias com discos efêmeros nem múltiplas réplicas com arquivos SQLite independentes. Não versione o banco, `.env` ou backups. Nesta atualização, a inicialização cria as tabelas `convidado_membros` e `convite_links` e gera os endereços por nome para cadastros existentes, preservando tokens, respostas e compras. Convites antigos continuam individuais até que a família seja cadastrada. Mudanças futuras em colunas existentes exigem migração específica.
+Mantenha `database.db` em armazenamento persistente (ou configure um caminho absoluto em `DATABASE_URL=sqlite:////caminho/database.db` no Linux). Não use instâncias com discos efêmeros nem múltiplas réplicas com arquivos SQLite independentes. Não versione o banco, `.env` ou backups. Nesta atualização, a inicialização cria as tabelas `convidado_membros` e `convite_links` e gera os endereços por nome para cadastros existentes, preservando tokens, respostas e compras. Também adiciona automaticamente a coluna opcional `valor` em `presentes`; os presentes existentes permanecem sem preço até serem editados. Convites antigos continuam individuais até que a família seja cadastrada. Mudanças futuras em colunas existentes exigem migração específica.
 
 ### Backup sem interromper o evento
 
