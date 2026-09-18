@@ -44,8 +44,6 @@ function PixContent({ gift, children }: { gift: Gift; children: ReactNode }) {
     <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, p: { xs: 1.5, sm: 2 } }}>
     <Chip label={gift.ativo ? 'Contribuição livre' : 'Inativo'} size="small" sx={{ alignSelf: 'start', bgcolor: '#DEF2E9', color: '#205B47', maxWidth: '100%' }} />
     <Typography variant="h6" sx={{ fontSize: { xs: 16, sm: 19 }, overflowWrap: 'anywhere' }}>{gift.nome}</Typography>
-    <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{gift.descricao || 'Um carinho para ajudar a construir nossa nova casa.'}</Typography>
-    <Typography variant="body2" sx={{ color: '#27745A', fontWeight: 600 }}>Qualquer valor é bem-vindo 💙</Typography>
     <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 'auto', pt: .5 }}>
       {bank ? <><Box component="img" src={`/banks/${bank.id}.svg`} alt={`Logo ${bank.name}`} sx={{ width: 32, height: 32, borderRadius: 1 }} /><Box><Typography variant="caption" color="text.secondary">Pix via</Typography><Typography variant="body2" fontWeight={600}>{bank.name}</Typography></Box></> : <><Pix color="primary" fontSize="small" /><Typography variant="body2" color="text.secondary">Contribua via Pix</Typography></>}
     </Stack>
