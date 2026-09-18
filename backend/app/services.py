@@ -115,7 +115,7 @@ def bought(db: Session, gift_id: int) -> int:
 
 def gift_data(gift: Gift, quantity: int):
     return {"id": gift.id, "nome": gift.nome, "descricao": gift.descricao, "imagem_url": gift.imagem_url, "produto_url": gift.produto_url,
-            "tipo": gift.tipo, "chave_pix": gift.chave_pix,
+            "tipo": gift.tipo, "chave_pix": gift.chave_pix, "banco_pix": gift.banco_pix,
             "valor": format(gift.valor, ".2f") if gift.valor is not None else None,
             "quantidade_desejada": gift.quantidade_desejada, "quantidade_comprada": quantity, "quantidade_restante": max(0, gift.quantidade_desejada - quantity),
             "completo": quantity >= gift.quantidade_desejada, "ativo": gift.ativo, "ordem": gift.ordem}

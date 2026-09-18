@@ -10,7 +10,7 @@ export interface MemberInput { id?: number; nome: string; status_presenca: Statu
 export interface Invitation { nome: string; status_presenca: Status; quantidade_acompanhantes: number; evento: EventInfo; membros: Member[]; convite_familiar: boolean; quantidade_confirmados: number }
 export interface Guest extends Omit<Invitation, 'evento'> { id: number; token: string; slug: string; observacao: string; convidado_por: ConvidadoPor }
 export interface Gift {
-  tipo: 'PRODUTO' | 'PIX'; chave_pix: string;
+  tipo: 'PRODUTO' | 'PIX'; chave_pix: string; banco_pix: string;
   id: number; nome: string; descricao: string; imagem_url: string; produto_url: string;
   valor: string | null;
   quantidade_desejada: number; quantidade_comprada: number; quantidade_restante: number;

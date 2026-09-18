@@ -4,6 +4,7 @@ import { ContentCopy, Pix } from '@mui/icons-material'
 import { ProductImage, useToast } from './components'
 import { GiftValue } from './GiftValue'
 import type { Gift } from './types'
+import { pixBanks } from './pixBanks'
 
 export function GiftGrid({ children }: { children: ReactNode }) {
   return <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(auto-fill, minmax(220px, 1fr))' }, gap: { xs: 1.25, sm: 2 }, alignItems: 'stretch' }}>{children}</Box>
@@ -33,21 +34,22 @@ export function GiftCard({ gift, children, header, highlighted = false }: { gift
 
 function PixContent({ gift, children }: { gift: Gift; children: ReactNode }) {
   const toast = useToast()
+  const bank = pixBanks.find(bank => bank.id === gift.banco_pix)
   async function copy() {
     try { await navigator.clipboard.writeText(gift.chave_pix); toast('Chave Pix copiada!') }
-    catch { toast('Não foi possível copiar. Selecione a chave abaixo e copie manualmente.', true) }
+    catch { toast('Não foi possível copiar. Permita o acesso à área de transferência e tente novamente.', true) }
   }
-  return <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, p: { xs: 1.5, sm: 2 }, background: 'linear-gradient(160deg, #EDF9F6, #FFFFFF)' }}>
-    <Box sx={{ py: 2, textAlign: 'center' }}><Pix sx={{ fontSize: 48, color: '#27745A' }} /></Box>
+  return <>
+    {gift.imagem_url ? <ProductImage url={gift.imagem_url} name={gift.nome} compact /> : <Box sx={{ py: 3, textAlign: 'center', bgcolor: '#F3F8FF' }}><Pix sx={{ fontSize: 48, color: 'primary.main' }} /></Box>}
+    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, p: { xs: 1.5, sm: 2 } }}>
     <Chip label={gift.ativo ? 'Contribuição livre' : 'Inativo'} size="small" sx={{ alignSelf: 'start', bgcolor: '#DEF2E9', color: '#205B47', maxWidth: '100%' }} />
     <Typography variant="h6" sx={{ fontSize: { xs: 16, sm: 19 }, overflowWrap: 'anywhere' }}>{gift.nome}</Typography>
     <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{gift.descricao || 'Um carinho para ajudar a construir nossa nova casa.'}</Typography>
     <Typography variant="body2" sx={{ color: '#27745A', fontWeight: 600 }}>Qualquer valor é bem-vindo 💙</Typography>
-    <Box sx={{ mt: 'auto', p: 1.25, borderRadius: 1, bgcolor: 'white', border: '1px solid #CFE7DD' }}>
-      <Typography variant="caption" color="text.secondary">Chave Pix</Typography>
-      <Typography variant="body2" sx={{ overflowWrap: 'anywhere', userSelect: 'all' }}>{gift.chave_pix}</Typography>
-    </Box>
+    <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 'auto', pt: .5 }}>
+      {bank ? <><Box component="img" src={`/banks/${bank.id}.svg`} alt={`Logo ${bank.name}`} sx={{ width: 32, height: 32, borderRadius: 1 }} /><Box><Typography variant="caption" color="text.secondary">Pix via</Typography><Typography variant="body2" fontWeight={600}>{bank.name}</Typography></Box></> : <><Pix color="primary" fontSize="small" /><Typography variant="body2" color="text.secondary">Contribua via Pix</Typography></>}
+    </Stack>
     <Button variant="contained" fullWidth startIcon={<ContentCopy />} onClick={copy} sx={{ px: .5, fontSize: { xs: 11, sm: 13 } }}>Copiar chave Pix</Button>
     {children}
-  </CardContent>
+  </CardContent></>
 }

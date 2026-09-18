@@ -70,6 +70,7 @@ class Gift(TimestampMixin, Base):
     nome: Mapped[str] = mapped_column(String(150))
     tipo: Mapped[str] = mapped_column(String(20), default="PRODUTO")
     chave_pix: Mapped[str] = mapped_column(String(150), default="")
+    banco_pix: Mapped[str] = mapped_column(String(30), default="")
     descricao: Mapped[str] = mapped_column(Text, default="")
     imagem_url: Mapped[str] = mapped_column(Text)
     produto_url: Mapped[str] = mapped_column(Text, default="")

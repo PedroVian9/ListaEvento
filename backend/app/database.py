@@ -36,6 +36,8 @@ def migrate_schema(database_engine=engine):
                 connection.exec_driver_sql("ALTER TABLE presentes ADD COLUMN tipo VARCHAR(20) NOT NULL DEFAULT 'PRODUTO'")
             if "chave_pix" not in columns:
                 connection.exec_driver_sql("ALTER TABLE presentes ADD COLUMN chave_pix VARCHAR(150) NOT NULL DEFAULT ''")
+            if "banco_pix" not in columns:
+                connection.exec_driver_sql("ALTER TABLE presentes ADD COLUMN banco_pix VARCHAR(30) NOT NULL DEFAULT ''")
         if "convidados" in tables:
             columns = {column["name"] for column in inspector.get_columns("convidados")}
             if "convidado_por" not in columns:

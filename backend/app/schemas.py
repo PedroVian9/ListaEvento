@@ -58,6 +58,7 @@ class GiftInput(Input):
     nome: str = Field(min_length=1, max_length=150)
     tipo: Literal["PRODUTO", "PIX"] = "PRODUTO"
     chave_pix: str = Field(default="", max_length=150)
+    banco_pix: Literal["", "itau", "nubank", "bradesco", "santander", "bancodobrasil", "caixa", "inter", "c6bank", "picpay", "mercadopago", "sicoob", "sicredi"] = ""
     descricao: str = Field(default="", max_length=2000)
     imagem_url: str = Field(default="", max_length=2048)
     produto_url: str = Field(default="", max_length=2048)
@@ -82,6 +83,7 @@ class GiftInput(Input):
         else:
             safe_url(self.imagem_url, required=True)
             self.chave_pix = ""
+            self.banco_pix = ""
         return self
 
     @field_validator("produto_url")

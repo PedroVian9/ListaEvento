@@ -182,7 +182,7 @@ def test_gift_value_migration_preserves_existing_data(tmp_path):
             assert connection.execute(text("SELECT id, nome, valor FROM presentes")).one() == (1, "Presente existente", None)
             assert [c["name"] for c in inspect(connection).get_columns("convidados")].count("convidado_por") == 1
             assert connection.execute(text("SELECT id, nome, convidado_por FROM convidados")).one() == (1, "Convidado existente", "AMBOS")
-            assert connection.execute(text("SELECT tipo, chave_pix FROM presentes")).one() == ("PRODUTO", "")
+            assert connection.execute(text("SELECT tipo, chave_pix, banco_pix FROM presentes")).one() == ("PRODUTO", "", "")
     finally:
         legacy.dispose()
 
@@ -190,7 +190,7 @@ def test_gift_value_migration_preserves_existing_data(tmp_path):
 def test_pix_conversion_excludes_metrics_and_cannot_be_purchased(admin):
     person = guest(admin)
     present, body = gift(admin, quantity=999)
-    pix = {**body, 'tipo': 'PIX', 'chave_pix': 'teste@example.com', 'valor': '9999.00'}
+    pix = {**body, 'tipo': 'PIX', 'chave_pix': 'teste@example.com', 'banco_pix': 'itau', 'valor': '9999.00'}
     response = admin.put(f'/api/admin/presentes/{present["id"]}', json=pix)
     assert response.status_code == 200, response.text
     assert response.json()['valor'] is None
@@ -198,6 +198,8 @@ def test_pix_conversion_excludes_metrics_and_cannot_be_purchased(admin):
     assert response.json()['ordem'] == present['ordem']
     public = admin.get(f'/api/convites/{person["token"]}/presentes').json()[0]
     assert public['tipo'] == 'PIX' and public['chave_pix'] == 'teste@example.com'
+    assert public['banco_pix'] == 'itau' and public['imagem_url'] == body['imagem_url']
+    assert admin.put(f'/api/admin/presentes/{present["id"]}', json={**pix, 'banco_pix': 'invalid'}).status_code == 422
     assert admin.post(f'/api/convites/{person["token"]}/presentes/{present["id"]}/comprar', json={'quantidade': 1}).status_code == 422
     dashboard = admin.get('/api/admin/dashboard').json()
     for key in ('total_presentes', 'presentes_completos', 'unidades_desejadas', 'unidades_compradas', 'unidades_compradas_sem_valor'):

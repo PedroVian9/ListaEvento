@@ -4,10 +4,11 @@ import { Add, DragIndicator, EditOutlined, MoreVert, Search } from '@mui/icons-m
 import { api, json, message, useResource } from '../api'
 import { ConfirmDialog, Empty, ErrorState, Loading, ProductImage, useToast } from '../components'
 import type { Gift, GiftInput } from '../types'
+import { pixBanks } from '../pixBanks'
 import { GiftValue } from '../GiftValue'
 import { GiftCard, GiftGrid } from '../GiftCard'
 
-const blank: GiftInput = { tipo: 'PRODUTO', chave_pix: '', nome: '', descricao: '', imagem_url: '', produto_url: '', valor: null, quantidade_desejada: 1, ordem: 0, ativo: true }
+const blank: GiftInput = { tipo: 'PRODUTO', chave_pix: '', banco_pix: '', nome: '', descricao: '', imagem_url: '', produto_url: '', valor: null, quantidade_desejada: 1, ordem: 0, ativo: true }
 export function GiftsPage() {
   const { data, setData, error, loading, refresh } = useResource<Gift[]>('/admin/presentes')
   const [ordering, setOrdering] = useState(false)
@@ -44,7 +45,7 @@ export function GiftsPage() {
     return card ? Number(card.getAttribute('data-gift-id')) : null
   }
   function openForm(gift?: Gift) {
-    setEditing(gift || 'new'); setForm(gift ? { tipo: gift.tipo, chave_pix: gift.chave_pix, nome: gift.nome, descricao: gift.descricao, imagem_url: gift.imagem_url, produto_url: gift.produto_url, valor: gift.valor?.replace('.', ',') ?? null, quantidade_desejada: gift.quantidade_desejada, ordem: gift.ordem, ativo: gift.ativo } : { ...blank }); setFormError('')
+    setEditing(gift || 'new'); setForm(gift ? { tipo: gift.tipo, chave_pix: gift.chave_pix, banco_pix: gift.banco_pix || '', nome: gift.nome, descricao: gift.descricao, imagem_url: gift.imagem_url, produto_url: gift.produto_url, valor: gift.valor?.replace('.', ',') ?? null, quantidade_desejada: gift.quantidade_desejada, ordem: gift.ordem, ativo: gift.ativo } : { ...blank }); setFormError('')
   }
   const valueText = form.valor?.trim() || ''
   const validValue = /^\d{1,6}([,.]\d{1,2})?$/.test(valueText)
@@ -93,12 +94,12 @@ export function GiftsPage() {
       <TextField select label="Tipo de item" value={form.tipo} onChange={e => field('tipo', e.target.value)}>
         <MenuItem value="PRODUTO">Produto</MenuItem><MenuItem value="PIX">Contribuição Pix</MenuItem>
       </TextField>
-      {form.tipo === 'PIX' && <><Alert severity="info">Contribuição livre, sem preço ou quantidade. Não entra nos indicadores de presentes nem no valor estimado arrecadado.</Alert><TextField required label="Chave Pix" value={form.chave_pix} onChange={e => field('chave_pix', e.target.value)} inputProps={{ maxLength: 150 }} helperText="Informe somente a chave. Use a descrição para identificar o banco ou favorecido." /></>}
+      {form.tipo === 'PIX' && <><Alert severity="info">Contribuição livre, sem preço ou quantidade. Não entra nos indicadores de presentes nem no valor estimado arrecadado.</Alert><TextField required label="Chave Pix" value={form.chave_pix} onChange={e => field('chave_pix', e.target.value)} inputProps={{ maxLength: 150 }} helperText="Informe somente a chave. A chave fica oculta no card; o botão copia o valor completo." /><TextField select label="Banco do Pix" value={form.banco_pix} onChange={e => field('banco_pix', e.target.value)}><MenuItem value="">Outro / não exibir banco</MenuItem>{pixBanks.map(bank => <MenuItem key={bank.id} value={bank.id}><Box component="img" src={`/banks/${bank.id}.svg`} alt="" sx={{ width: 24, height: 24, mr: 1 }} />{bank.name}</MenuItem>)}</TextField></>}
       {formError && <Alert severity="error">{formError}</Alert>}<TextField autoFocus required label="Nome" value={form.nome} onChange={e => field('nome', e.target.value)} inputProps={{ maxLength: 150 }} /><TextField label="Descrição" multiline minRows={2} value={form.descricao} onChange={e => field('descricao', e.target.value)} inputProps={{ maxLength: 2000 }} />
+      <TextField required={form.tipo === 'PRODUTO'} type="url" label="URL da imagem" value={form.imagem_url} onChange={e => field('imagem_url', e.target.value)} helperText="Use um endereço público de imagem (http ou https)." inputProps={{ maxLength: 2048 }} />
+      {/^https?:\/\//i.test(form.imagem_url) && <Box sx={{ width: 170, alignSelf: 'center', borderRadius: 2, overflow: 'hidden' }}><ProductImage url={form.imagem_url} name="Prévia da imagem" compact /></Box>}
       {form.tipo === 'PRODUTO' && <><TextField label="Valor sugerido (opcional)" value={form.valor ?? ''} onChange={e => field('valor', e.target.value)} inputProps={{ inputMode: 'decimal', maxLength: 12 }} slotProps={{ input: { startAdornment: <InputAdornment position="start">R$</InputAdornment> } }} helperText="Valor por unidade. Ex.: 129,90. Deixe vazio para não exibir preço na lista." />
       {value !== null && <Box><Typography variant="caption" color="text.secondary">Prévia na lista</Typography><GiftValue value={value} /></Box>}
-      <TextField required type="url" label="URL da imagem" value={form.imagem_url} onChange={e => field('imagem_url', e.target.value)} helperText="Use um endereço público de imagem (http ou https)." inputProps={{ maxLength: 2048 }} />
-      {/^https?:\/\//i.test(form.imagem_url) && <Box sx={{ width: 170, alignSelf: 'center', borderRadius: 2, overflow: 'hidden' }}><ProductImage url={form.imagem_url} name="Prévia da imagem" compact /></Box>}
       <TextField type="url" label="URL da sugestão de compra" value={form.produto_url} onChange={e => field('produto_url', e.target.value)} inputProps={{ maxLength: 2048 }} /></>}<Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>{form.tipo === 'PRODUTO' && <TextField required type="number" label="Quantidade desejada" value={form.quantidade_desejada} inputProps={{ min: editing && editing !== 'new' ? Math.max(1, editing.quantidade_comprada) : 1, max: 10000, step: 1 }} onChange={e => field('quantidade_desejada', Number(e.target.value))} />}{editing !== 'new' && <TextField required type="number" label="Ordem" value={form.ordem} inputProps={{ min: 0, step: 1 }} onChange={e => field('ordem', Number(e.target.value))} />}</Stack>
       <FormControlLabel control={<Switch checked={form.ativo} onChange={e => field('ativo', e.target.checked)} />} label="Ativo na lista de presentes" />
     </Stack></DialogContent><DialogActions><Button onClick={() => setEditing(null)} disabled={busy}>Cancelar</Button><Button type="submit" variant="contained" disabled={busy}>{busy ? 'Salvando…' : 'Salvar presente'}</Button></DialogActions></Box></Dialog>
