@@ -82,6 +82,29 @@ def test_invitation_privacy_attendance_and_companions(admin):
     assert admin.get(f"/api/convites/{token}").json()["quantidade_acompanhantes"] == 0
 
 
+def test_guest_source_is_admin_only_and_counted(admin):
+    pedro = admin.post("/api/admin/convidados", json={"nome": "Amigo do Pedro", "convidado_por": "PEDRO"}).json()
+    maria = admin.post("/api/admin/convidados", json={"nome": "Família da Maria", "convidado_por": "MARIA", "membros": [{"nome": "Ana"}, {"nome": "Bia"}]}).json()
+    both = admin.post("/api/admin/convidados", json={"nome": "Amigos do casal", "convidado_por": "AMBOS"}).json()
+
+    assert pedro["convidado_por"] == "PEDRO"
+    assert "convidado_por" not in admin.get(f'/api/convites/{pedro["token"]}').json()
+    dashboard = admin.get("/api/admin/dashboard").json()
+    assert dashboard["convites_por_origem"] == {"PEDRO": 1, "MARIA": 1, "AMBOS": 1}
+    assert dashboard["pessoas_por_origem"] == {"PEDRO": 1, "MARIA": 2, "AMBOS": 1}
+
+    edited = admin.put(f'/api/admin/convidados/{both["id"]}', json={"nome": both["nome"], "convidado_por": "PEDRO"}).json()
+    assert edited["convidado_por"] == "PEDRO"
+    assert admin.post("/api/admin/convidados", json={"nome": "Inválido", "convidado_por": "OUTRO"}).status_code == 422
+
+
+def test_guests_are_listed_in_creation_order(admin):
+    first = guest(admin, "Zuleica")
+    second = guest(admin, "Ana")
+    listed = admin.get("/api/admin/convidados").json()
+    assert [item["id"] for item in listed] == [first["id"], second["id"]]
+
+
 def test_purchase_limits_privacy_and_history(admin):
     person = guest(admin)
     present, body = gift(admin)
@@ -150,13 +173,54 @@ def test_gift_value_migration_preserves_existing_data(tmp_path):
         with legacy.begin() as connection:
             connection.exec_driver_sql("CREATE TABLE presentes (id INTEGER PRIMARY KEY, nome TEXT)")
             connection.exec_driver_sql("INSERT INTO presentes VALUES (1, 'Presente existente')")
+            connection.exec_driver_sql("CREATE TABLE convidados (id INTEGER PRIMARY KEY, nome TEXT)")
+            connection.exec_driver_sql("INSERT INTO convidados VALUES (1, 'Convidado existente')")
         migrate_gift_value(legacy)
         migrate_gift_value(legacy)
         with legacy.connect() as connection:
             assert [c["name"] for c in inspect(connection).get_columns("presentes")].count("valor") == 1
             assert connection.execute(text("SELECT id, nome, valor FROM presentes")).one() == (1, "Presente existente", None)
+            assert [c["name"] for c in inspect(connection).get_columns("convidados")].count("convidado_por") == 1
+            assert connection.execute(text("SELECT id, nome, convidado_por FROM convidados")).one() == (1, "Convidado existente", "AMBOS")
+            assert connection.execute(text("SELECT tipo, chave_pix FROM presentes")).one() == ("PRODUTO", "")
     finally:
         legacy.dispose()
+
+
+def test_pix_conversion_excludes_metrics_and_cannot_be_purchased(admin):
+    person = guest(admin)
+    present, body = gift(admin, quantity=999)
+    pix = {**body, 'tipo': 'PIX', 'chave_pix': 'teste@example.com', 'valor': '9999.00'}
+    response = admin.put(f'/api/admin/presentes/{present["id"]}', json=pix)
+    assert response.status_code == 200, response.text
+    assert response.json()['valor'] is None
+    assert response.json()['quantidade_desejada'] == 1
+    assert response.json()['ordem'] == present['ordem']
+    public = admin.get(f'/api/convites/{person["token"]}/presentes').json()[0]
+    assert public['tipo'] == 'PIX' and public['chave_pix'] == 'teste@example.com'
+    assert admin.post(f'/api/convites/{person["token"]}/presentes/{present["id"]}/comprar', json={'quantidade': 1}).status_code == 422
+    dashboard = admin.get('/api/admin/dashboard').json()
+    for key in ('total_presentes', 'presentes_completos', 'unidades_desejadas', 'unidades_compradas', 'unidades_compradas_sem_valor'):
+        assert dashboard[key] == 0
+    assert dashboard['valor_estimado_arrecadado'] == '0.00'
+    assert admin.post('/api/admin/presentes', json={'nome': 'Pix', 'tipo': 'PIX', 'chave_pix': 'teste@example.com'}).status_code == 201
+    assert admin.post('/api/admin/presentes', json={'nome': 'Pix', 'tipo': 'PIX', 'chave_pix': '   '}).status_code == 422
+    assert admin.post('/api/admin/presentes', json={'nome': 'Produto sem imagem'}).status_code == 422
+
+
+def test_dashboard_estimate_preserves_purchase_history(admin):
+    person = guest(admin)
+    for price, quantity in [('10.10', 3), ('0.20', 2), (None, 1), ('0.00', 1)]:
+        present, body = gift(admin)
+        assert admin.put(f'/api/admin/presentes/{present["id"]}', json={**body, 'valor': price}).status_code == 200
+        assert admin.post(f'/api/convites/{person["token"]}/presentes/{present["id"]}/comprar', json={'quantidade': quantity}).status_code == 201
+        assert admin.put(f'/api/admin/presentes/{present["id"]}', json={**body, 'tipo': 'PIX', 'chave_pix': 'teste@example.com'}).status_code == 409
+        assert admin.delete(f'/api/admin/presentes/{present["id"]}').status_code == 204
+    assert admin.delete(f'/api/admin/convidados/{person["id"]}').status_code == 204
+    dashboard = admin.get('/api/admin/dashboard').json()
+    assert dashboard['valor_estimado_arrecadado'] == '30.70'
+    assert dashboard['unidades_compradas_sem_valor'] == 1
+    assert dashboard['total_presentes'] == 0
 
 
 def test_regeneration_and_soft_delete(admin):

@@ -1,4 +1,5 @@
 import secrets
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import func, select, text
@@ -33,15 +34,22 @@ def dashboard(db: Session = Depends(get_db)):
     invitations = list(db.scalars(select(Guest)))
     people = sum(sum(m.status_presenca == "CONFIRMADO" for m in g.membros) if g.membros else int(g.status_presenca == "CONFIRMADO") for g in invitations) + companions
     invited_people = sum(len(g.membros) if g.membros else 1 for g in invitations)
-    gifts = list_gifts(db, public=True)
+    invitation_sources = {source: sum(g.convidado_por == source for g in invitations) for source in ("PEDRO", "MARIA", "AMBOS")}
+    people_sources = {source: sum((len(g.membros) if g.membros else 1) for g in invitations if g.convidado_por == source) for source in ("PEDRO", "MARIA", "AMBOS")}
+    products = [g for g in list_gifts(db) if g["tipo"] == "PRODUTO"]
+    gifts = [g for g in products if g["ativo"]]
+    estimated = sum((Decimal(g["valor"]) * g["quantidade_comprada"] for g in products if g["valor"] is not None), Decimal("0"))
     return {"total_convidados": sum(counts.values()), "confirmados": confirmed, "nao_vao": counts.get("NAO_VAI", 0), "pendentes": counts.get("PENDENTE", 0),
             "pessoas_confirmadas": people, "pessoas_convidadas": invited_people, "total_presentes": len(gifts), "presentes_completos": sum(g["completo"] for g in gifts),
-            "unidades_desejadas": sum(g["quantidade_desejada"] for g in gifts), "unidades_compradas": sum(g["quantidade_comprada"] for g in gifts)}
+            "convites_por_origem": invitation_sources, "pessoas_por_origem": people_sources,
+            "unidades_desejadas": sum(g["quantidade_desejada"] for g in gifts), "unidades_compradas": sum(g["quantidade_comprada"] for g in gifts),
+            "valor_estimado_arrecadado": format(estimated, ".2f"),
+            "unidades_compradas_sem_valor": sum(g["quantidade_comprada"] for g in products if g["valor"] is None)}
 
 
 @router.get("/convidados")
 def guests(db: Session = Depends(get_db)):
-    return [admin_guest(g) for g in db.scalars(select(Guest).order_by(Guest.nome, Guest.id))]
+    return [admin_guest(g) for g in db.scalars(select(Guest).order_by(Guest.id))]
 
 
 @router.post("/convidados", status_code=201)
@@ -151,6 +159,8 @@ def edit_gift(gift_id: int, data: GiftInput, db: Session = Depends(get_db)):
     write_lock(db)
     gift = get_or_404(db, Gift, gift_id)
     quantity = bought(db, gift_id)
+    if data.tipo != gift.tipo and quantity:
+        raise HTTPException(409, "Este item já tem compras registradas e não pode mudar de tipo.")
     if data.quantidade_desejada < quantity:
         raise HTTPException(409, f"Este presente já tem {quantity} unidade(s) comprada(s). A quantidade desejada não pode ser menor.")
     for key, value in data.model_dump().items():

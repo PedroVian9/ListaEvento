@@ -92,7 +92,8 @@ def sync_family_status(guest: Guest):
 
 def admin_guest(guest: Guest):
     slug = next((link.slug for link in guest.links if link.ativo), None)
-    return {**public_guest(guest), "id": guest.id, "token": guest.token, "slug": slug, "observacao": guest.observacao, "criado_em": guest.criado_em, "atualizado_em": guest.atualizado_em}
+    return {**public_guest(guest), "id": guest.id, "token": guest.token, "slug": slug, "observacao": guest.observacao,
+            "convidado_por": guest.convidado_por, "criado_em": guest.criado_em, "atualizado_em": guest.atualizado_em}
 
 
 def assign_invitation_link(db: Session, guest: Guest):
@@ -114,6 +115,7 @@ def bought(db: Session, gift_id: int) -> int:
 
 def gift_data(gift: Gift, quantity: int):
     return {"id": gift.id, "nome": gift.nome, "descricao": gift.descricao, "imagem_url": gift.imagem_url, "produto_url": gift.produto_url,
+            "tipo": gift.tipo, "chave_pix": gift.chave_pix,
             "valor": format(gift.valor, ".2f") if gift.valor is not None else None,
             "quantidade_desejada": gift.quantidade_desejada, "quantidade_comprada": quantity, "quantidade_restante": max(0, gift.quantidade_desejada - quantity),
             "completo": quantity >= gift.quantidade_desejada, "ativo": gift.ativo, "ordem": gift.ordem}

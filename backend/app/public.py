@@ -73,6 +73,8 @@ def purchase(token: str, gift_id: int, data: PurchaseInput, db: Session = Depend
     gift = db.get(Gift, gift_id)
     if not gift or not gift.ativo:
         raise HTTPException(404, "Este presente não está disponível.")
+    if gift.tipo == "PIX":
+        raise HTTPException(422, "Contribuições Pix não são registradas como compras de produtos.")
     remaining = gift.quantidade_desejada - bought(db, gift.id)
     if data.quantidade > remaining:
         raise HTTPException(409, f"A lista foi atualizada. Restam {remaining} unidade(s) deste presente.")

@@ -3,9 +3,10 @@ from decimal import Decimal
 from typing import Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator, model_validator
 
 Status = Literal["PENDENTE", "CONFIRMADO", "NAO_VAI"]
+ConvidadoPor = Literal["PEDRO", "MARIA", "AMBOS"]
 
 
 class Input(BaseModel):
@@ -38,6 +39,7 @@ class GuestInput(Input):
     observacao: str = Field(default="", max_length=2000)
     status_presenca: Status = "PENDENTE"
     quantidade_acompanhantes: int = Field(default=0, ge=0, le=30, strict=True)
+    convidado_por: ConvidadoPor = "AMBOS"
     membros: list[MemberInput] | None = Field(default=None, max_length=50)
 
 
@@ -54,8 +56,10 @@ class PurchaseInput(Input):
 
 class GiftInput(Input):
     nome: str = Field(min_length=1, max_length=150)
+    tipo: Literal["PRODUTO", "PIX"] = "PRODUTO"
+    chave_pix: str = Field(default="", max_length=150)
     descricao: str = Field(default="", max_length=2000)
-    imagem_url: str = Field(min_length=1, max_length=2048)
+    imagem_url: str = Field(default="", max_length=2048)
     produto_url: str = Field(default="", max_length=2048)
     valor: Decimal | None = Field(default=None, ge=0, le=Decimal("999999.99"), max_digits=8, decimal_places=2)
     quantidade_desejada: int = Field(default=1, ge=1, le=10000, strict=True)
@@ -65,7 +69,20 @@ class GiftInput(Input):
     @field_validator("imagem_url")
     @classmethod
     def image_url(cls, value):
-        return safe_url(value, required=True)
+        return safe_url(value)
+
+    @model_validator(mode="after")
+    def validate_type(self):
+        if self.tipo == "PIX":
+            if not self.chave_pix:
+                raise ValueError("Informe a chave Pix.")
+            self.valor = None
+            self.quantidade_desejada = 1
+            self.produto_url = ""
+        else:
+            safe_url(self.imagem_url, required=True)
+            self.chave_pix = ""
+        return self
 
     @field_validator("produto_url")
     @classmethod

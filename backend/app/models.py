@@ -30,6 +30,7 @@ class Guest(TimestampMixin, Base):
     __table_args__ = (
         CheckConstraint("quantidade_acompanhantes >= 0"),
         CheckConstraint("status_presenca IN ('PENDENTE', 'CONFIRMADO', 'NAO_VAI')"),
+        CheckConstraint("convidado_por IN ('PEDRO', 'MARIA', 'AMBOS')"),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
     nome: Mapped[str] = mapped_column(String(150))
@@ -37,6 +38,7 @@ class Guest(TimestampMixin, Base):
     status_presenca: Mapped[str] = mapped_column(String(20), default="PENDENTE")
     quantidade_acompanhantes: Mapped[int] = mapped_column(Integer, default=0)
     observacao: Mapped[str] = mapped_column(Text, default="")
+    convidado_por: Mapped[str] = mapped_column(String(20), default="AMBOS")
     membros: Mapped[list["GuestMember"]] = relationship(cascade="all, delete-orphan", order_by="GuestMember.id", lazy="selectin")
     links: Mapped[list["InviteLink"]] = relationship(lazy="selectin")
 
@@ -66,6 +68,8 @@ class Gift(TimestampMixin, Base):
     __table_args__ = (CheckConstraint("quantidade_desejada > 0"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     nome: Mapped[str] = mapped_column(String(150))
+    tipo: Mapped[str] = mapped_column(String(20), default="PRODUTO")
+    chave_pix: Mapped[str] = mapped_column(String(150), default="")
     descricao: Mapped[str] = mapped_column(Text, default="")
     imagem_url: Mapped[str] = mapped_column(Text)
     produto_url: Mapped[str] = mapped_column(Text, default="")

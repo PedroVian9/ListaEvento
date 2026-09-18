@@ -114,6 +114,7 @@ function GiftList({ token, event }: { token: string; event: EventInfo }) {
   const priceRange = priceRanges.find(range => range.id === priceFilter)
   const filtered = gifts?.filter(g => {
     if (!g.nome.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))) return false
+    if (g.tipo === 'PIX') return filter === 'todos' && priceFilter === 'todos'
     if (filter !== 'todos' && (filter === 'completos' ? !g.completo : g.completo)) return false
     if (priceFilter === 'semvalor') return g.valor == null
     if (priceRange) return g.valor != null && Number(g.valor) >= priceRange.min && Number(g.valor) <= priceRange.max
@@ -142,7 +143,7 @@ function GiftList({ token, event }: { token: string; event: EventInfo }) {
       <Typography variant="body2" sx={{ color: 'primary.main' }}>Pode ser esse ou um similar. O carinho é o que importa. 💙</Typography>
     </Stack>
     {gifts && gifts.length > 0 && <>
-      {gifts.every(g => g.completo) && <Alert severity="success" sx={{ mb: 3 }}>Nossa lista já está completa. Muito obrigado pelo carinho! 💙</Alert>}
+      {gifts.some(g => g.tipo !== 'PIX') && gifts.filter(g => g.tipo !== 'PIX').every(g => g.completo) && <Alert severity="success" sx={{ mb: 3 }}>Nossa lista já está completa. Muito obrigado pelo carinho! 💙</Alert>}
       <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ md: 'center' }} justifyContent="space-between" gap={2} sx={{ mb: 3 }}>
         <Tabs value={filter} onChange={(_, v) => setFilter(v)} aria-label="Filtrar presentes"><Tab value="todos" label="Todos" /><Tab value="disponiveis" label="Disponíveis" /><Tab value="completos" label="Completos" /></Tabs>
         <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} sx={{ width: { xs: '100%', md: 480 }, maxWidth: '100%' }}>
@@ -158,8 +159,10 @@ function GiftList({ token, event }: { token: string; event: EventInfo }) {
     {error ? <ErrorState error={error} retry={refresh} /> : loading && !gifts ? <Loading /> : !gifts?.length ? <Empty title="Nossa lista está a caminho" description="Nossa lista de presentes será disponibilizada em breve." /> : !filtered.length ? <Empty title="Nenhum presente encontrado" description="Experimente outra busca ou faixa de preço." action={<Button onClick={clearFilters}>Limpar filtros</Button>} /> :
       <GiftGrid>
         {filtered.map(gift => <GiftCard key={gift.id} gift={gift}>
+          {gift.tipo !== 'PIX' && <>
             {gift.produto_url && <Button href={gift.produto_url} target="_blank" rel="noopener noreferrer" fullWidth variant="outlined" endIcon={<ArrowOutward fontSize="small" />} size="small" sx={{ mt: .25, px: .5, fontSize: { xs: 11, sm: 13 } }}>Ver sugestão</Button>}
             <Button variant="contained" fullWidth size="small" disabled={gift.completo} onClick={() => { setSelected(gift); setQuantity(1); setPurchaseError('') }} sx={{ px: .5, fontSize: { xs: 11, sm: 13 } }}>{gift.completo ? 'Completo ✓' : 'Comprei esse ou similar'}</Button>
+          </>}
         </GiftCard>)}
       </GiftGrid>}
     <Stack direction="row" justifyContent="center" gap={1} sx={{ mt: 4, color: 'text.secondary' }}><LockOutlined sx={{ fontSize: 16, mt: .25 }} /><Typography variant="caption">Seu nome não aparece na lista de presentes.</Typography></Stack>
