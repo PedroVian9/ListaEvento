@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Alert, Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Menu, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, CardContent, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, InputAdornment, Menu, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { Add, ContentCopy, DeleteOutline, EditOutlined, MoreVert, Search } from '@mui/icons-material'
 import { api, json, message, useResource } from '../api'
 import { ConfirmDialog, Empty, ErrorState, Loading, StatusChip, statusLabels, useToast } from '../components'
@@ -22,6 +22,7 @@ export function GuestsPage() {
   const [menu, setMenu] = useState<{ anchor: HTMLElement; guest: Guest } | null>(null)
   const [confirm, setConfirm] = useState<{ guest: Guest; action: 'delete' | 'regenerate' } | null>(null)
   const [linkGuest, setLinkGuest] = useState<Guest | null>(null)
+  const [sending, setSending] = useState<Set<number>>(new Set())
   const toast = useToast()
   const guestLink = invitationLink
   async function copy(guest: Guest) {
@@ -48,6 +49,15 @@ export function GuestsPage() {
       refresh(); setConfirm(null); toast(confirm.action === 'delete' ? 'Convidado excluído.' : 'Novo link gerado. O anterior deixou de funcionar.')
     } catch (e) { toast(message(e), true) } finally { setBusy(false) }
   }
+  async function setInvitationSent(guest: Guest, sent: boolean) {
+    setSending(current => new Set(current).add(guest.id))
+    try {
+      await api<Guest>(`/admin/convidados/${guest.id}/enviado`, json('PUT', { enviado: sent }))
+      refresh()
+    } catch (e) { toast(message(e), true) } finally {
+      setSending(current => { const next = new Set(current); next.delete(guest.id); return next })
+    }
+  }
   const numberById = new Map((data || []).map((guest, index) => [guest.id, index + 1]))
   const filtered = data?.filter(g => [g.nome, ...g.membros.map(m => m.nome)].some(name => name.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))) && (filter === 'TODOS' || g.status_presenca === filter) && (sourceFilter === 'TODOS' || g.convidado_por === sourceFilter)) || []
   return <Stack gap={3}>
@@ -56,7 +66,7 @@ export function GuestsPage() {
     {loading && !data ? <Loading /> : error ? <ErrorState error={error} retry={refresh} /> : !data?.length ? <Empty title="Toda história tem pessoas especiais" description="Adicione seu primeiro convidado para gerar um convite individual." action={<Button onClick={() => openForm()} startIcon={<Add />}>Adicionar convidado</Button>} /> : !filtered.length ? <Empty title="Nenhum convidado encontrado" description="Experimente outra busca ou filtro." /> :
       <Stack gap={1.5}>{filtered.map(guest => <Card key={guest.id}><CardContent sx={{ '&:last-child': { pb: 2 }, p: 2 }}><Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2}>
         <Box sx={{ flex: 1, minWidth: 0 }}><Stack direction="row" alignItems="baseline" gap={1}><Typography color="text.secondary" sx={{ fontWeight: 600 }}>#{numberById.get(guest.id)}</Typography><Typography variant="h6" sx={{ overflowWrap: 'anywhere' }}>{guest.nome}</Typography></Stack><Stack direction="row" alignItems="center" flexWrap="wrap" gap={1} sx={{ mt: 1 }}><StatusChip status={guest.status_presenca} /><Typography variant="caption" color="text.secondary">Convidado por: {sourceLabels[guest.convidado_por]}</Typography>{guest.convite_familiar ? <Typography variant="caption" color="text.secondary">{guest.quantidade_confirmados} de {guest.membros.length} pessoas confirmadas</Typography> : event?.acompanhantes_habilitados && <Typography variant="caption" color="text.secondary">{guest.quantidade_acompanhantes} acompanhante(s)</Typography>}</Stack>{guest.convite_familiar && <Stack gap={.75} sx={{ mt: 1.5 }}>{guest.membros.map(member => <Stack key={member.id} direction="row" alignItems="center" gap={1}><Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{member.nome}</Typography><StatusChip status={member.status_presenca} /></Stack>)}</Stack>}{guest.observacao && <Typography variant="body2" color="text.secondary" sx={{ mt: 1, overflowWrap: 'anywhere' }}>{guest.observacao}</Typography>}</Box>
-        <Stack direction="row" gap={.5}><Button startIcon={<ContentCopy />} onClick={() => copy(guest)} sx={{ flex: 1 }}>Copiar link</Button><IconButton aria-label={`Editar ${guest.nome}`} onClick={() => openForm(guest)}><EditOutlined /></IconButton><IconButton aria-label={`Mais ações para ${guest.nome}`} onClick={e => setMenu({ anchor: e.currentTarget, guest })}><MoreVert /></IconButton></Stack>
+        <Stack direction="row" alignItems="center" gap={.5}><FormControlLabel sx={{ mr: .5, whiteSpace: 'nowrap' }} label="Enviado" control={<Checkbox size="small" checked={guest.convite_enviado} disabled={sending.has(guest.id)} inputProps={{ 'aria-label': `Convite enviado para ${guest.nome}` }} onChange={e => setInvitationSent(guest, e.target.checked)} />} /><Button startIcon={<ContentCopy />} onClick={() => copy(guest)} sx={{ flex: 1 }}>Copiar link</Button><IconButton aria-label={`Editar ${guest.nome}`} onClick={() => openForm(guest)}><EditOutlined /></IconButton><IconButton aria-label={`Mais ações para ${guest.nome}`} onClick={e => setMenu({ anchor: e.currentTarget, guest })}><MoreVert /></IconButton></Stack>
       </Stack></CardContent></Card>)}</Stack>}
     <Menu anchorEl={menu?.anchor} open={!!menu} onClose={() => setMenu(null)}><MenuItem onClick={() => { if (menu) { setLinkGuest(menu.guest); setMenu(null) } }}>Ver link</MenuItem><MenuItem onClick={() => { if (menu) { setConfirm({ guest: menu.guest, action: 'regenerate' }); setMenu(null) } }}>Regenerar link</MenuItem><MenuItem sx={{ color: 'error.main' }} onClick={() => { if (menu) { setConfirm({ guest: menu.guest, action: 'delete' }); setMenu(null) } }}>Excluir convidado</MenuItem></Menu>
     <Dialog open={!!editing} onClose={busy ? undefined : () => setEditing(null)}><Box component="form" onSubmit={save} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}><DialogTitle>{editing === 'new' ? 'Novo convidado' : 'Editar convidado'}</DialogTitle><DialogContent><Stack gap={2.5} sx={{ pt: 1 }}>{formError && <Alert severity="error">{formError}</Alert>}<TextField autoFocus required label="Nome" value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} inputProps={{ maxLength: 150 }} helperText="Ex.: Madrinha Cláudia. Esse nome também aparece no endereço do convite." /><TextField select required label="Convidado por" value={form.convidado_por} onChange={e => setForm({ ...form, convidado_por: e.target.value as ConvidadoPor })} helperText="Informação visível apenas na gestão.">{Object.entries(sourceLabels).map(([key, value]) => <MenuItem key={key} value={key}>{value}</MenuItem>)}</TextField><TextField label="Observação (opcional)" multiline minRows={2} value={form.observacao} onChange={e => setForm({ ...form, observacao: e.target.value })} helperText="Visível apenas para o casal." inputProps={{ maxLength: 2000 }} />

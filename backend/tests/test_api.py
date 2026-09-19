@@ -98,6 +98,19 @@ def test_guest_source_is_admin_only_and_counted(admin):
     assert admin.post("/api/admin/convidados", json={"nome": "Inválido", "convidado_por": "OUTRO"}).status_code == 422
 
 
+def test_invitation_sent_flag_is_persistent_and_admin_only(admin):
+    person = guest(admin)
+    path = f'/api/admin/convidados/{person["id"]}/enviado'
+    assert person["convite_enviado"] is False
+    sent = admin.put(path, json={"enviado": True})
+    assert sent.status_code == 200, sent.text
+    assert sent.json()["convite_enviado"] is True
+    assert admin.get("/api/admin/convidados").json()[0]["convite_enviado"] is True
+    assert "convite_enviado" not in admin.get(f'/api/convites/{person["token"]}').json()
+    assert admin.put(path, json={"enviado": False}).json()["convite_enviado"] is False
+    assert admin.put(path, json={"enviado": "true"}).status_code == 422
+
+
 def test_guests_are_listed_in_creation_order(admin):
     first = guest(admin, "Zuleica")
     second = guest(admin, "Ana")
@@ -182,6 +195,8 @@ def test_gift_value_migration_preserves_existing_data(tmp_path):
             assert connection.execute(text("SELECT id, nome, valor FROM presentes")).one() == (1, "Presente existente", None)
             assert [c["name"] for c in inspect(connection).get_columns("convidados")].count("convidado_por") == 1
             assert connection.execute(text("SELECT id, nome, convidado_por FROM convidados")).one() == (1, "Convidado existente", "AMBOS")
+            assert [c["name"] for c in inspect(connection).get_columns("convidados")].count("convite_enviado") == 1
+            assert connection.execute(text("SELECT convite_enviado FROM convidados")).one() == (0,)
             assert connection.execute(text("SELECT tipo, chave_pix, banco_pix FROM presentes")).one() == ("PRODUTO", "", "")
     finally:
         legacy.dispose()

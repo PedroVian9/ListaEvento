@@ -93,7 +93,8 @@ def sync_family_status(guest: Guest):
 def admin_guest(guest: Guest):
     slug = next((link.slug for link in guest.links if link.ativo), None)
     return {**public_guest(guest), "id": guest.id, "token": guest.token, "slug": slug, "observacao": guest.observacao,
-            "convidado_por": guest.convidado_por, "criado_em": guest.criado_em, "atualizado_em": guest.atualizado_em}
+            "convidado_por": guest.convidado_por, "convite_enviado": guest.convite_enviado,
+            "criado_em": guest.criado_em, "atualizado_em": guest.atualizado_em}
 
 
 def assign_invitation_link(db: Session, guest: Guest):

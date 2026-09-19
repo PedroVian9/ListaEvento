@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from .database import get_db
 from .models import Gift, Guest, GuestMember
-from .schemas import EventInput, GiftInput, GiftOrderInput, GuestInput
+from .schemas import EventInput, GiftInput, GiftOrderInput, GuestInput, InvitationSentInput
 from .services import admin_guest, assign_invitation_link, bought, get_event, gift_data, list_gifts, require_admin, save_event, sync_family_status
 
 router = APIRouter(prefix="/api/admin", tags=["Administração"], dependencies=[Depends(require_admin)])
@@ -105,6 +105,15 @@ def edit_guest(guest_id: int, data: GuestInput, db: Session = Depends(get_db)):
     normalize_guest(guest, db)
     if name_changed:
         assign_invitation_link(db, guest)
+    db.commit()
+    return admin_guest(guest)
+
+
+@router.put("/convidados/{guest_id}/enviado")
+def set_invitation_sent(guest_id: int, data: InvitationSentInput, db: Session = Depends(get_db)):
+    write_lock(db)
+    guest = get_or_404(db, Guest, guest_id)
+    guest.convite_enviado = data.enviado
     db.commit()
     return admin_guest(guest)
 

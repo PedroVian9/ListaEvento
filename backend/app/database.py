@@ -42,6 +42,8 @@ def migrate_schema(database_engine=engine):
             columns = {column["name"] for column in inspector.get_columns("convidados")}
             if "convidado_por" not in columns:
                 connection.exec_driver_sql("ALTER TABLE convidados ADD COLUMN convidado_por VARCHAR(20) NOT NULL DEFAULT 'AMBOS'")
+            if "convite_enviado" not in columns:
+                connection.exec_driver_sql("ALTER TABLE convidados ADD COLUMN convite_enviado BOOLEAN NOT NULL DEFAULT 0")
 
 
 def migrate_gift_value(database_engine=engine):

@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator, model_validator
 
 Status = Literal["PENDENTE", "CONFIRMADO", "NAO_VAI"]
 ConvidadoPor = Literal["PEDRO", "MARIA", "AMBOS"]
@@ -41,6 +41,10 @@ class GuestInput(Input):
     quantidade_acompanhantes: int = Field(default=0, ge=0, le=30, strict=True)
     convidado_por: ConvidadoPor = "AMBOS"
     membros: list[MemberInput] | None = Field(default=None, max_length=50)
+
+
+class InvitationSentInput(Input):
+    enviado: StrictBool
 
 
 class Attendance(Input):

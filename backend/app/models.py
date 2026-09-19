@@ -39,6 +39,7 @@ class Guest(TimestampMixin, Base):
     quantidade_acompanhantes: Mapped[int] = mapped_column(Integer, default=0)
     observacao: Mapped[str] = mapped_column(Text, default="")
     convidado_por: Mapped[str] = mapped_column(String(20), default="AMBOS")
+    convite_enviado: Mapped[bool] = mapped_column(Boolean, default=False)
     membros: Mapped[list["GuestMember"]] = relationship(cascade="all, delete-orphan", order_by="GuestMember.id", lazy="selectin")
     links: Mapped[list["InviteLink"]] = relationship(lazy="selectin")
 
