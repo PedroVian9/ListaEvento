@@ -169,6 +169,14 @@ def test_gift_value_create_update_clear_and_public_list(admin):
     assert created.json()["valor"] == "0.10"
 
 
+def test_product_purchase_suggestion_url_is_optional(admin):
+    body = {"nome": "Jogo de toalhas", "imagem_url": "https://example.com/toalha.jpg"}
+    created = admin.post("/api/admin/presentes", json=body)
+
+    assert created.status_code == 201, created.text
+    assert created.json()["produto_url"] == ""
+
+
 @pytest.mark.parametrize("value", [-1, "12.345", "1000000", "NaN", "Infinity", "abc", True])
 def test_gift_value_rejects_invalid_values(admin, value):
     present, body = gift(admin)
