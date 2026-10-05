@@ -40,6 +40,7 @@ class GuestInput(Input):
     status_presenca: Status = "PENDENTE"
     quantidade_acompanhantes: int = Field(default=0, ge=0, le=30, strict=True)
     convidado_por: ConvidadoPor = "AMBOS"
+    data_limite_confirmacao: date | None = None
     membros: list[MemberInput] | None = Field(default=None, max_length=50)
 
 

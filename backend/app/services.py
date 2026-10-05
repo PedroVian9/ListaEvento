@@ -84,6 +84,12 @@ def public_guest(guest: Guest):
             "quantidade_confirmados": sum(m["status_presenca"] == "CONFIRMADO" for m in members) + guest.quantidade_acompanhantes}
 
 
+def event_for_guest(db: Session, guest: Guest):
+    event = get_event(db)
+    event["data_limite_confirmacao"] = guest.data_limite_confirmacao.isoformat() if guest.data_limite_confirmacao else None
+    return event
+
+
 def sync_family_status(guest: Guest):
     statuses = {m.status_presenca for m in guest.membros}
     guest.status_presenca = "CONFIRMADO" if "CONFIRMADO" in statuses else "PENDENTE" if "PENDENTE" in statuses else "NAO_VAI"
@@ -94,6 +100,7 @@ def admin_guest(guest: Guest):
     slug = next((link.slug for link in guest.links if link.ativo), None)
     return {**public_guest(guest), "id": guest.id, "token": guest.token, "slug": slug, "observacao": guest.observacao,
             "convidado_por": guest.convidado_por, "convite_enviado": guest.convite_enviado,
+            "data_limite_confirmacao": guest.data_limite_confirmacao,
             "criado_em": guest.criado_em, "atualizado_em": guest.atualizado_em}
 
 

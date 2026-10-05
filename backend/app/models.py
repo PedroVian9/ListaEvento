@@ -1,8 +1,8 @@
 import secrets
 from decimal import Decimal
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -40,6 +40,7 @@ class Guest(TimestampMixin, Base):
     observacao: Mapped[str] = mapped_column(Text, default="")
     convidado_por: Mapped[str] = mapped_column(String(20), default="AMBOS")
     convite_enviado: Mapped[bool] = mapped_column(Boolean, default=False)
+    data_limite_confirmacao: Mapped[date | None] = mapped_column(Date, nullable=True)
     membros: Mapped[list["GuestMember"]] = relationship(cascade="all, delete-orphan", order_by="GuestMember.id", lazy="selectin")
     links: Mapped[list["InviteLink"]] = relationship(lazy="selectin")
 

@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy import create_engine, event, inspect
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
@@ -44,6 +46,12 @@ def migrate_schema(database_engine=engine):
                 connection.exec_driver_sql("ALTER TABLE convidados ADD COLUMN convidado_por VARCHAR(20) NOT NULL DEFAULT 'AMBOS'")
             if "convite_enviado" not in columns:
                 connection.exec_driver_sql("ALTER TABLE convidados ADD COLUMN convite_enviado BOOLEAN NOT NULL DEFAULT 0")
+            if "data_limite_confirmacao" not in columns:
+                connection.exec_driver_sql("ALTER TABLE convidados ADD COLUMN data_limite_confirmacao DATE")
+                event_row = connection.exec_driver_sql("SELECT valor FROM configuracoes WHERE chave = 'evento'").first() if "configuracoes" in tables else None
+                deadline = json.loads(event_row[0]).get("data_limite_confirmacao") if event_row else None
+                if deadline:
+                    connection.exec_driver_sql("UPDATE convidados SET data_limite_confirmacao = ?", (deadline,))
 
 
 def migrate_gift_value(database_engine=engine):

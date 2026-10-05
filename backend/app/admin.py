@@ -1,4 +1,5 @@
 import secrets
+from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -56,6 +57,9 @@ def guests(db: Session = Depends(get_db)):
 def create_guest(data: GuestInput, db: Session = Depends(get_db)):
     write_lock(db)
     guest = Guest(**data.model_dump(exclude={"membros"}))
+    if "data_limite_confirmacao" not in data.model_fields_set:
+        deadline = get_event(db)["data_limite_confirmacao"]
+        guest.data_limite_confirmacao = date.fromisoformat(deadline) if deadline else None
     update_members(guest, data)
     normalize_guest(guest, db)
     db.add(guest)

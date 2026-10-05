@@ -205,6 +205,8 @@ def test_gift_value_migration_preserves_existing_data(tmp_path):
             assert connection.execute(text("SELECT id, nome, convidado_por FROM convidados")).one() == (1, "Convidado existente", "AMBOS")
             assert [c["name"] for c in inspect(connection).get_columns("convidados")].count("convite_enviado") == 1
             assert connection.execute(text("SELECT convite_enviado FROM convidados")).one() == (0,)
+            assert [c["name"] for c in inspect(connection).get_columns("convidados")].count("data_limite_confirmacao") == 1
+            assert connection.execute(text("SELECT data_limite_confirmacao FROM convidados")).one() == (None,)
             assert connection.execute(text("SELECT tipo, chave_pix, banco_pix FROM presentes")).one() == ("PRODUTO", "", "")
     finally:
         legacy.dispose()
@@ -313,14 +315,32 @@ def test_event_settings_and_sharing(admin):
 
 
 def test_attendance_deadline_blocks_new_and_changed_answers(admin):
-    person = guest(admin)
-    path = f'/api/convites/{person["token"]}/presenca'
     settings = admin.get("/api/admin/configuracoes").json()
     settings["data_limite_confirmacao"] = "2000-01-01"
     assert admin.put("/api/admin/configuracoes", json=settings).status_code == 200
+    person = guest(admin)
+    path = f'/api/convites/{person["token"]}/presenca'
     response = admin.put(path, json={"status": "CONFIRMADO"})
     assert response.status_code == 403
     assert "encerrou em 01/01/2000" in response.json()["detail"]
+
+
+def test_each_invitation_keeps_its_own_attendance_deadline(admin):
+    settings = admin.get("/api/admin/configuracoes").json()
+    settings["data_limite_confirmacao"] = "2000-01-01"
+    assert admin.put("/api/admin/configuracoes", json=settings).status_code == 200
+    old_guest = guest(admin, "Convite antigo")
+
+    settings["data_limite_confirmacao"] = "2999-01-01"
+    assert admin.put("/api/admin/configuracoes", json=settings).status_code == 200
+    new_guest = admin.post("/api/admin/convidados", json={"nome": "Novo convite", "data_limite_confirmacao": "2999-02-01"}).json()
+
+    old_invitation = admin.get(f'/api/convites/{old_guest["token"]}').json()
+    new_invitation = admin.get(f'/api/convites/{new_guest["token"]}').json()
+    assert old_invitation["evento"]["data_limite_confirmacao"] == "2000-01-01"
+    assert new_invitation["evento"]["data_limite_confirmacao"] == "2999-02-01"
+    assert admin.put(f'/api/convites/{old_guest["token"]}/presenca', json={"status": "CONFIRMADO"}).status_code == 403
+    assert admin.put(f'/api/convites/{new_guest["token"]}/presenca', json={"status": "CONFIRMADO"}).status_code == 200
 
 
 def family(client, name="Madrinha e família"):

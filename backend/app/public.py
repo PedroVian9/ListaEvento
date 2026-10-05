@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .models import Gift, Purchase
 from .schemas import Attendance, PurchaseInput
-from .services import bought, find_guest, get_event, list_gifts, public_guest, sync_family_status
+from .services import bought, event_for_guest, find_guest, get_event, list_gifts, public_guest, sync_family_status
 
 router = APIRouter(prefix="/api", tags=["Convites"])
 
@@ -19,14 +19,15 @@ def event_info(db: Session = Depends(get_db)):
 
 @router.get("/convites/{token}")
 def invitation(token: str, db: Session = Depends(get_db)):
-    return {**public_guest(find_guest(db, token)), "evento": get_event(db)}
+    guest = find_guest(db, token)
+    return {**public_guest(guest), "evento": event_for_guest(db, guest)}
 
 
 @router.put("/convites/{token}/presenca")
 def attendance(token: str, data: Attendance, db: Session = Depends(get_db)):
     db.execute(text("BEGIN IMMEDIATE"))
     guest = find_guest(db, token)
-    event = get_event(db)
+    event = event_for_guest(db, guest)
     deadline = event["data_limite_confirmacao"]
     if deadline and date.fromisoformat(deadline) < date.today():
         raise HTTPException(403, "O prazo para confirmar presença encerrou em " + date.fromisoformat(deadline).strftime("%d/%m/%Y") + ".")

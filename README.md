@@ -34,9 +34,9 @@ Neste workspace, foi instalado Python por meio de uma cópia local do uv em `.to
 
 ## Primeiro uso
 
-1. Entre em `/admin` e abra **Configurações**. Informe nome do casal, evento, data, horário, endereço, link do Maps e, se desejar, a data limite de confirmação. O prazo é inclusivo até 23h59; depois dele as respostas ficam apenas para consulta.
+1. Entre em `/admin` e abra **Configurações**. Informe nome do casal, evento, data, horário, endereço, link do Maps e, se desejar, a data limite padrão de confirmação. O prazo é inclusivo até 23h59; depois dele as respostas ficam apenas para consulta.
 2. Habilite acompanhantes se necessário. Desabilitar a opção zera as quantidades anteriores, conforme informado na tela.
-3. Cadastre o nome do convite, por exemplo **Madrinha e família**. Esse único campo forma a saudação **Olá, Madrinha e família!** e o link **/convite/madrinha-e-familia**. Para uma família, clique em **Adicionar família** e preencha todas as pessoas em **Pessoa 1**, **Pessoa 2**, etc., inclusive a titular. Copie e compartilhe um único link.
+3. Cadastre o nome do convite, por exemplo **Madrinha e família**, e defina seu prazo individual de confirmação. Novos convites começam com o prazo padrão, mas você pode escolher outra data sem alterar links já enviados. Esse único campo forma a saudação **Olá, Madrinha e família!** e o link **/convite/madrinha-e-familia**. Para uma família, clique em **Adicionar família** e preencha todas as pessoas em **Pessoa 1**, **Pessoa 2**, etc., inclusive a titular. Copie e compartilhe um único link.
 4. Cadastre presentes, quantidade desejada e URLs externas de imagem e produto. Você também pode informar o **Valor sugerido (opcional)** por unidade, em reais (ex.: `129,90`), e conferir sua prévia no formulário. O valor aparece em destaque nos cartões da administração e do convite; deixe o campo vazio para ocultá-lo. Nenhuma imagem de produto é armazenada no projeto.
 5. Acompanhe confirmações, total de pessoas e presentes completos no painel.
 
