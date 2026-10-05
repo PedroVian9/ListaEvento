@@ -20,7 +20,8 @@ export type GiftInput = Omit<Gift, 'id' | 'quantidade_comprada' | 'quantidade_re
 export interface DashboardData {
   valor_estimado_arrecadado: string; unidades_compradas_sem_valor: number;
   total_convidados: number; confirmados: number; nao_vao: number; pendentes: number;
-  pessoas_confirmadas: number; pessoas_convidadas: number; total_presentes: number; presentes_completos: number;
+  convites_enviados: number;
+  pessoas_confirmadas: number; pessoas_nao_vao: number; pessoas_pendentes: number; pessoas_convidadas: number; total_presentes: number; presentes_completos: number;
   unidades_desejadas: number; unidades_compradas: number;
   convites_por_origem: Record<ConvidadoPor, number>; pessoas_por_origem: Record<ConvidadoPor, number>;
 }

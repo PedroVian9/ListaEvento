@@ -366,6 +366,7 @@ def test_family_selection_counts_and_changes(admin):
     assert result.json()["membros"][0]["status_presenca"] == "NAO_VAI"
     dashboard = admin.get("/api/admin/dashboard").json()
     assert dashboard["pessoas_confirmadas"] == 4 and dashboard["total_convidados"] == 1 and dashboard["pessoas_convidadas"] == 7
+    assert dashboard["pessoas_nao_vao"] == 3 and dashboard["pessoas_pendentes"] == 0
     settings = admin.get("/api/admin/configuracoes").json()
     assert not settings["acompanhantes_habilitados"]
     admin.put("/api/admin/configuracoes", json=settings)

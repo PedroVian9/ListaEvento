@@ -33,15 +33,24 @@ def dashboard(db: Session = Depends(get_db)):
     confirmed = counts.get("CONFIRMADO", 0)
     companions = db.scalar(select(func.coalesce(func.sum(Guest.quantidade_acompanhantes), 0)).where(Guest.status_presenca == "CONFIRMADO")) if get_event(db)["acompanhantes_habilitados"] else 0
     invitations = list(db.scalars(select(Guest)))
-    people = sum(sum(m.status_presenca == "CONFIRMADO" for m in g.membros) if g.membros else int(g.status_presenca == "CONFIRMADO") for g in invitations) + companions
-    invited_people = sum(len(g.membros) if g.membros else 1 for g in invitations)
+    people_by_status = {
+        status: sum(
+            sum(member.status_presenca == status for member in guest.membros)
+            if guest.membros else int(guest.status_presenca == status)
+            for guest in invitations
+        )
+        for status in ("CONFIRMADO", "NAO_VAI", "PENDENTE")
+    }
+    people = people_by_status["CONFIRMADO"] + companions
+    invited_people = sum(people_by_status.values())
     invitation_sources = {source: sum(g.convidado_por == source for g in invitations) for source in ("PEDRO", "MARIA", "AMBOS")}
     people_sources = {source: sum((len(g.membros) if g.membros else 1) for g in invitations if g.convidado_por == source) for source in ("PEDRO", "MARIA", "AMBOS")}
     products = [g for g in list_gifts(db) if g["tipo"] == "PRODUTO"]
     gifts = [g for g in products if g["ativo"]]
     estimated = sum((Decimal(g["valor"]) * g["quantidade_comprada"] for g in products if g["valor"] is not None), Decimal("0"))
     return {"total_convidados": sum(counts.values()), "confirmados": confirmed, "nao_vao": counts.get("NAO_VAI", 0), "pendentes": counts.get("PENDENTE", 0),
-            "pessoas_confirmadas": people, "pessoas_convidadas": invited_people, "total_presentes": len(gifts), "presentes_completos": sum(g["completo"] for g in gifts),
+            "convites_enviados": sum(guest.convite_enviado for guest in invitations),
+            "pessoas_confirmadas": people, "pessoas_nao_vao": people_by_status["NAO_VAI"], "pessoas_pendentes": people_by_status["PENDENTE"], "pessoas_convidadas": invited_people, "total_presentes": len(gifts), "presentes_completos": sum(g["completo"] for g in gifts),
             "convites_por_origem": invitation_sources, "pessoas_por_origem": people_sources,
             "unidades_desejadas": sum(g["quantidade_desejada"] for g in gifts), "unidades_compradas": sum(g["quantidade_comprada"] for g in gifts),
             "valor_estimado_arrecadado": format(estimated, ".2f"),
